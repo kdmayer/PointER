@@ -1,0 +1,13 @@
+.idea/
+__pycache__/
+*.csv
+.DS_Store
+
+#experimentation/*
+#!experimentation/Point_Cloud_Demo.ipynb
+
+#src/*
+
+data/*
+
+assets/*
