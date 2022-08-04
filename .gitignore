@@ -11,3 +11,8 @@ __pycache__/
 data/*
 
 assets/*
+!assets/coventry_building_footprints.geojson
+!assets/cropped_16.las
+!assets/cropped_24.las
+!assets/cropped_31.las
+!assets/cropped_41.las
