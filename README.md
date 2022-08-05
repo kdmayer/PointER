@@ -1,6 +1,6 @@
 # CS224W_LIDAR
 
-## Exemplary PDAL Output
+## Exemplary PDAL Output from Point_Cloud_Demo.ipynb
  
  ![PDAL Output](https://github.com/kdmayer/CS224W_LIDAR/blob/main/assets/images/example.png)
 
