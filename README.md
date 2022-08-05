@@ -1,6 +1,6 @@
 ## Setup Instructions
 
-Git Clone repo to your local machine. Navigate into root directory.
+Clone repo to your local machine. Navigate into root directory.
 
 To get started, initialize and activate the environment with
 
