@@ -16,4 +16,4 @@ assets/*
 assets/images/*
 !assets/images/example.png
 
-environment.yml
+!environment.yml
