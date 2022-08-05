@@ -9,7 +9,9 @@ To get started, initialize and activate the environment with
     
  ## TODOs.md
  
- The TODOs.md document helps us to keep track of our progress and TODO items. Please specify the date and the author name when adding new TODOs. 
+ TODOs.md helps us to keep track of our progress and TODO items. 
+ 
+ Please specify the date and the author name when adding new TODOs. 
     
 ## Important Note: 
 
