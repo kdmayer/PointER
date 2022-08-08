@@ -7,6 +7,12 @@ To get started, initialize and activate the environment with
     conda env create --file=environment.yml
     conda activate cs224w
     
+ ## TODOs.md
+ 
+ TODOs.md helps us to keep track of our progress and TODO items. 
+ 
+ Please specify the date and the author name when adding new TODOs. 
+    
 ## Important Note: 
 
  - **Please do not push your changes directly to the main branch.**
