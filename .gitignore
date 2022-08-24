@@ -16,4 +16,7 @@ assets/*
 assets/images/*
 !assets/images/example.png
 
+venv/*
+
 !environment.yml
+config.py
