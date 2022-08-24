@@ -5,6 +5,7 @@ __pycache__/
 
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
+!experimentation/Download_LiDAR_Tiles.ipynb
 
 assets/*
 !assets/coventry_building_footprints.geojson
