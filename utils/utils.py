@@ -6,7 +6,6 @@ import laspy
 
 
 
-
 def _convert_numpy_to_las(x: np.ndarray = None, header=None):
     outfile = laspy.LasData(header)
     outfile.x = x[:, 0]
@@ -37,7 +36,7 @@ def _convert_las_to_numpy(las_data=None):
     return lidar_numpy
 
 
-def subsample_las(original_las_data_filepath: str = None, random_sample_size: int = 1000000):
+def subsample_las(original_las_data_filepath: str = None, random_sample_size: int = 100000):
     org_las_data = laspy.read(original_las_data_filepath)
     # Set meta data for new LAS file based on settings from original LAS file
     hdr = org_las_data.header
