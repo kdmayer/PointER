@@ -10,9 +10,12 @@ In your conda base environment, install your environment with
 
 Example: 
 
-    conda-lock install -p win-64 -n cs224w 
+    conda-lock install -n cs224w 
 
-Note: The -n argument will overwrite the name specified in the environment.yml file
+Note: 
+
+The -p argument specifies your local OS and can be either *linux-64*, *osx-64*, or *win-64*
+The -n argument will overwrite the name specified in the environment.yml file
 
 Then, activate your environment with:
 
