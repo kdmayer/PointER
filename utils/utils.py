@@ -28,12 +28,12 @@ def _convert_las_to_numpy(las_data=None):
     return lidar_numpy
 
 
-def _convert_multipoint_to_numpy(mp: shapely.geometry.MultiPoint = None):
+def convert_multipoint_to_numpy(mp: shapely.geometry.MultiPoint = None):
     lidar_numpy = np.array([(g.x, g.y, g.z) for g in mp.geoms])
     return lidar_numpy
 
 
-def _convert_numpy_to_multipoint(lidar_numpy: np.ndarray = None):
+def convert_numpy_to_multipoint(lidar_numpy: np.ndarray = None):
     assert lidar_numpy.shape[0] == 3, 'unexpected shape of array. expected shape is (3, :)'
     mp = shapely.geometry.MultiPoint(lidar_numpy)
     return mp

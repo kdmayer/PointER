@@ -7,7 +7,7 @@ import numpy as np
 import time
 
 from utils.visualization import visualize_single_3d_point_cloud
-from utils.utils import normalize_geom, _convert_multipoint_to_numpy
+from utils.utils import normalize_geom, convert_multipoint_to_numpy
 
 
 db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
@@ -82,7 +82,7 @@ lidar_numpy_list = list(gdf.geom.apply(normalize_geom, args=[scaling_factor, ran
 # visualize point clouds before and after normalization
 for i, lidar_pc in enumerate(lidar_numpy_list):
     # visualize non normalized buildings
-    lidar_pc_non_normalized = _convert_multipoint_to_numpy(gdf.iloc[i].geom)
+    lidar_pc_non_normalized = convert_multipoint_to_numpy(gdf.iloc[i].geom)
     visualize_single_3d_point_cloud(lidar_pc_non_normalized, title=str(i), save_dir='', show=False)
 
     # visualize normalized
