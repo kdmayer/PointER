@@ -42,9 +42,8 @@ polys = [elem.wkt for elem in footprint_list if isinstance(elem, shapely.geometr
 print(f"Number of relevant polygons: {len(polys)}")
 
 # crop LiDAR data in footprints using pdal
-sample_size = 10
+sample_size = 1
 run_pdal_pipeline(footprint_list=polys, las_file_path=LAS_FILE_PATH, random_sample_size=sample_size)
-print("Process ran: %s seconds \n That is ~ %s per building footprint", (stop_time, int(stop_time/sample_size)))
 
 # load and postprocess cropped LiDAR point cloud examples
 point_cloud_examples = []
