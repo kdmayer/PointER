@@ -14,8 +14,8 @@ Example:
 
 Note: 
 
-The -p argument specifies your local OS and can be either *linux-64*, *osx-64*, or *win-64*
-The -n argument will overwrite the name specified in the environment.yml file
+- The -p argument specifies your local OS and can be either *linux-64*, *osx-64*, or *win-64*
+- The -n argument will overwrite the name specified in the environment.yml file
 
 Then, activate your environment with:
 
