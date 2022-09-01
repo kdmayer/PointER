@@ -13,12 +13,21 @@ Author: Kevin
 Date: 24/8/22
 Author: Sebastian
 
-- @Kevin: How to download and store LiDAR tiles on server  :fire:
+- @Kevin: How to download and store LiDAR tiles on server  :+1:
 - @Sebastian Normalize LiDAR point clouds and save them as .npy format (scaling must be relative to the height of the
  tallest building) :fire:
 - @Sebastian: Finish pipeline for one tile :fire:
 - @Sebastian: Contact verisk again for building footprints. :fire:
-- @Sebastian: Contact UK open gov. program regarding API for LiDAR :fire:
+- @Sebastian: Contact UK open gov. program regarding API for LiDAR :+1:
+
+---
+Date: 31/8/22
+Author: Sebastian
+- @Kevin: add footprint floor to point cloud as additional points :fire:
+- @Sebastian Normalize LiDAR point clouds and save them as .npz format (scaling must be relative to the height of the
+ tallest building) --> loop through AOIs, select LiDAR tiles :fire:
+- @Sebastian: visualize more buildings and do sanity check of normalization (e.g. tower of bliss tweed mill)
+- @Sebastian: Contact verisk again for building footprints. :fire:
 
 Icons:
 
