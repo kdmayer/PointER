@@ -3,6 +3,9 @@ __pycache__/
 *.csv
 .DS_Store
 
+!environment.yml
+!conda-lock.yml
+
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
 !experimentation/Download_LiDAR_Tiles.ipynb
@@ -17,4 +20,4 @@ assets/*
 assets/images/*
 !assets/images/example.png
 
-!environment.yml
+

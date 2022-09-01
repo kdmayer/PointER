@@ -1,12 +1,30 @@
 ## Setup Instructions
 
-Clone repo to your local machine. Navigate into root directory.
+Clone repo to your local machine. Navigate into the root directory.
 
-To get started, initialize and activate the environment with
+In your conda base environment, follow the subsequent steps:
 
-    conda env create --file=environment.yml
-    conda activate cs224w
+    pip install conda-lock 
+    conda-lock -f environment.yml 
+    conda-lock install [-p {prefix}|-n {name}]
     
+Example: 
+
+    conda-lock install -p win-64 -n cs224w 
+
+Note: The -n argument will overwrite the name specified in the environment.yml file
+
+Then, activate your environment with:
+
+    conda activate cs224w
+
+You are ready to go.
+
+Note:
+
+- If you need to add new **conda** core dependencies, adapt the environment.yml file manually and go through the same process.
+- If you need to add new **pip** core dependencies, install them manually after going through the set up with conda-lock.
+
  ## TODOs.md
  
  TODOs.md helps us to keep track of our progress and TODO items. 
