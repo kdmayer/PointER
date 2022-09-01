@@ -1,13 +1,13 @@
 ## Setup Instructions
 
-Clone repo to your local machine. Navigate into the root directory.
+### Install given conda environment
 
-In your conda base environment, follow the subsequent steps:
+Clone the GitHub repository to your local machine. Navigate into the root directory.
 
-    pip install conda-lock 
-    conda-lock -f environment.yml 
+In your conda base environment, install your environment with 
+
     conda-lock install [-p {prefix}|-n {name}]
-    
+
 Example: 
 
     conda-lock install -p win-64 -n cs224w 
@@ -20,17 +20,28 @@ Then, activate your environment with:
 
 You are ready to go.
 
-Note:
+### Adapt given conda environment
 
-- If you need to add new **conda** core dependencies, adapt the environment.yml file manually and go through the same process.
-- If you need to add new **pip** core dependencies, install them manually after going through the set up with conda-lock.
+If you need to add new **conda** core dependencies to the existing environment.yml, adapt the environment.yml file manually.
 
- ## TODOs.md
+Afterwards,
+
+    pip install conda-lock 
+    conda-lock -f environment.yml 
+    conda-lock install [-p {prefix}|-n {name}]
+
+If you need to add new **pip** core dependencies, install them manually after going through the set up with conda-lock.
+
+Example:
+
+    pip install <new_core_dependency>
+
+## TODOs.md
  
  TODOs.md helps us to keep track of our progress and TODO items. 
  
  Please specify the date and the author name when adding new TODOs. 
-    
+
 ## Important Note: 
 
  - **Please do not push your changes directly to the main branch.**
