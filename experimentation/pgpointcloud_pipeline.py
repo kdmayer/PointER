@@ -1,7 +1,9 @@
 from sqlalchemy import create_engine
+
 import geopandas as gpd
 import config as config
 
+import time
 
 db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
                     + config.POSTGRES_PASSWORD + '@' \
@@ -11,28 +13,34 @@ db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
 
 con = create_engine(db_connection_url, echo=True)
 
-num_footprints = 100
+num_footprints = 10
 
 sql_test_query = "select *, f.wkb_geometry geom from footprints f"
 
 sql_query_grouped_points = (
-    """with footprints as (
-            select st_buffer(st_transform(wkb_geometry, 27700), 3) fp, footprints.ogc_fid id
-            from footprints
-            where footprints.ogc_fid < %s
-        ),
-        patch_unions as (
-            select fc.id, pc_union(pc_intersection(pa, fc.fp)) pau
-            from pointcloud_test lp
-            inner join footprints fc on pc_intersects(lp.pa, fc.fp) 
-            group by fc.id 
-        )
-        select id, st_union(geom) geom
+    """
+    with footprints as (
+        select st_buffer(st_transform(wkb_geometry, 27700), 10) fp, footprints.ogc_fid ogc_fid, footprints.id osm_id
+        from footprints
+        where footprints.ogc_fid < %s
+    ),
+    patch_unions as (
+        select fc.ogc_fid, pc_union(pc_intersection(pa, fc.fp)) pau
+        from pointcloud_test lp
+        inner join footprints fc on pc_intersects(lp.pa, fc.fp) 
+        group by fc.ogc_fid 
+    ), 
+    building_pc as (
+        select ogc_fid, st_union(geom) geom
         from (
-            select id, pc_explode(pau) p,  st_transform(st_force2d(pc_explode(pau)::geometry), 4326) geom
+            select ogc_fid, pc_explode(pau) p, pc_explode(pau)::geometry geom
             from patch_unions
         ) po
-        group by id 
+        group by ogc_fid 
+    )
+    select bpc.ogc_fid, bpc.geom, st_numgeometries(geom) num_p_in_pc, fp.fp fp_geom, fp.osm_id
+    from building_pc bpc
+    left join footprints fp on bpc.ogc_fid = fp.ogc_fid 
     """ % num_footprints
 )
 
@@ -72,7 +80,30 @@ sql_query_all_points = (
     """ % num_footprints
 )
 
+start_time = time.perf_counter()
+gdf = gpd.GeoDataFrame.from_postgis(sql_query_grouped_points, con) # query result requires geom column with geometries
+elapsed_time = time.perf_counter() - start_time
+print("Elapsed time: %s s\nTime per footprint %s s" % (elapsed_time, elapsed_time / num_footprints))
 
-gdf = gpd.GeoDataFrame.from_postgis(sql_query_grouped_points, con)
+import numpy as np
+from utils.visualization import visualize_3d_array, visualize_single_3d_point_cloud
+from utils.utils import normalize_point_cloud_gdf, _convert_multipoint_to_numpy
+#
+scaling_factor = 100
+random_sample_size = 2000
+lidar_list = normalize_point_cloud_gdf(gdf, scaling_factor, random_sample_size)
+
+# todo: visualise point clouds before and after normalization
+
+point_cloud_examples = []
+point_cloud_filenames = []
+for i, l in enumerate(lidar_list):
+    numpy_point_cloud = l[np.newaxis, ...]
+    point_cloud_examples.append(numpy_point_cloud)
+    point_cloud_filenames.append(str(i))
+point_cloud_examples = np.concatenate(point_cloud_examples, axis=0)
+point_cloud_examples.shape
 
 print('debug point')
+
+visualize_3d_array(point_cloud_examples, point_cloud_filenames, example_ID=4)
