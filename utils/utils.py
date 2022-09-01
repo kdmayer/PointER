@@ -84,12 +84,6 @@ def normalize_geom(geom: shapely.geometry = None, scaling_factor: int = 1000, ra
     return lidar_numpy
 
 
-def normalize_point_cloud_gdf(gdf_pc, scaling_factor: int = 1000, random_sample_size: int = None):
-    # apply normalization function to entire dataframe
-    lidar_numpy_list = list(gdf_pc.geom.apply(normalize_geom, args=[scaling_factor, random_sample_size]))
-    return lidar_numpy_list
-
-
 
 
 
