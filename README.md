@@ -25,8 +25,8 @@ To get started, initialize and activate the environment with
 	- in case of issues: https://github.com/laspy/laspy/issues/79
 - unzip .LAZ file to .las file
 	- laszip [laszipfilename.laz]
-- run pdal pipeline to insert pointcloud data from .LAZ file into database (can take a couple of minutes)
-	- pdal pipeline --input pipeline_LAZ_to_db.json
+- run pdal pipeline to insert pointcloud data from .LAS file into database (can take a couple of minutes)
+	- pdal pipeline --input pipeline_LAS_to_db.json
 - insert building footprints into database using ogr2ogr
 	- ogr2ogr -f "PostgreSQL" PG:"host=localhost dbname=postgres user=krapf password=krapf port=5432" coventry_building_footprints.geojson -nln footprints
 

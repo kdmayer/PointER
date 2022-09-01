@@ -23,12 +23,26 @@ scaling_factor = 100
 random_sample_size = 2000
 example_visualizations = 10
 
-sql_test_query = "select *, f.wkb_geometry geom from footprints f"
+# query to fetch points within building footprints as multipoint grouped by building.
 
+# IMPORTANT: query with geopandas requires a geom column in database to create a GeoDataFrame
 sql_query_grouped_points = (
+    # with footprints: defines prepares footprints from footprint table
+    # with patch_unions: crops the point clouds and prepares a pointcloud union per building
+    # with building_pc: transforms the pointcloud unions into multi points, grouped per building
+    # select: fetches the multipoints per building and adds additional information:
+    #   - ogc_fid: id of entry in footprint database (1 ... n)
+    #   - geom: multipoint of pointcloud cropped by building footprint outline
+    #   - num_p_in_pc: number of points in pointcloud
+    #   - fp_geom: footprint polygon
+    #   - osm_id: OSM id of footprint, prefix is way/ or /relation
+
+    # query is dynamically adapted by the number of requested footprints (num_footprints) as well as the sample size
+    # of the pointclouds (random_sample_size)
+
     """
     with footprints as (
-        select st_buffer(st_transform(wkb_geometry, 27700), 10) fp, footprints.ogc_fid ogc_fid, footprints.id osm_id
+        select st_buffer(st_transform(wkb_geometry, 27700), 10) fp, footprints.ogc_fid ogc_fid, footprints.id osm_id 
         from footprints
         where footprints.ogc_fid < %s
     ),
@@ -51,42 +65,6 @@ sql_query_grouped_points = (
     left join footprints fp on bpc.ogc_fid = fp.ogc_fid 
     where st_numgeometries(geom) > %s
     """ % (num_footprints, random_sample_size)
-)
-
-sql_query_all_points = (
-    """ with footprints as (
-            select st_buffer(st_transform(wkb_geometry, 27700), 3) fp, footprints.ogc_fid id
-            from footprints
-            where footprints.ogc_fid < %s
-        ),
-        patch_unions as (
-            select fc.id, pc_union(pc_intersection(pa, fc.fp)) pau
-            from pointcloud_test lp
-            inner join footprints fc on pc_intersects(lp.pa, fc.fp) 
-            group by fc.id 
-        ),
-        points as (
-            select pc_explode(pau) p, id
-            from patch_unions
-        )
-        select *, 
-            pc_astext(p) p,
-            pc_get(p, 'Intensity') Intensity,
-            pc_get(p, 'ReturnNumber') ReturnNumber,
-            pc_get(p, 'NumberOfReturns') NumberOfReturns,
-            pc_get(p, 'ScanDirectionFlag') ScanDirectionFlag,
-            pc_get(p, 'EdgeOfFlightLine') EdgeOfFlightLine,
-            pc_get(p, 'Classification') Classification,
-            pc_get(p, 'ScanAngleRank') ScanAngleRank,
-            pc_get(p, 'UserData') UserData,
-            pc_get(p, 'PointSourceId') PointSourceId,
-            pc_get(p, 'GpsTime') GpsTime,
-            pc_get(p, 'X') X,
-            pc_get(p, 'Y') Y,
-            pc_get(p, 'Z') Z,
-            st_transform(st_force2d(p::geometry), 4326) geom
-        from points 
-    """ % num_footprints
 )
 
 start_time = time.perf_counter()
