@@ -6,6 +6,8 @@ __pycache__/
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
 
+archive/*
+
 assets/*
 !assets/coventry_building_footprints.geojson
 !assets/cropped_16.las
