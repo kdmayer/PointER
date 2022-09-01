@@ -1,76 +1,223 @@
 import geopandas as gpd
+from geoalchemy2 import Geometry, WKTElement
 import numpy as np
 
-import os
-import shapely
+import json
 import laspy
+import os
+import pdal
+import time
 
-from utils import utils as utils
-import utils.visualization as visualization
-from experimentation.pdal_pipeline import run_pdal_pipeline
+from sqlalchemy import create_engine
 
+import config as config
+from utils.visualization import visualize_single_3d_point_cloud
+from utils.utils import normalize_geom, convert_multipoint_to_numpy
 
-# Define project base directory
+###############################################################################
+# Define project base directory and paths
 DIR_BASE = os.getcwd()
 DIR_ASSETS = os.path.join(os.path.dirname(DIR_BASE), 'assets')
-assert DIR_ASSETS.split("\\")[-1] == 'assets', "You are not in the assets directory"
+assert DIR_ASSETS.split("\\")[-1] == 'assets', \
+    "You are not in the assets directory"
 
+DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
+DIR_LAS_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
+DIR_NPZ = os.path.join(DIR_ASSETS, "pointcloud_npz")
+DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
+
+###############################################################################
 # Configuration
-LAS_FILE_PATH = os.path.join(DIR_ASSETS, "SP3025_P_10700_20190328_20190328.las")
+NUMBER_OF_FOOTPRINTS = 10
 POINT_COUNT_THRESHOLD = 1000
+NUMBER_EXAMPLE_VISUALIZATIONS = 10
+STANDARD_SRID = 27700
 
-# Run subsample test
-# test = utils.subsample_las(LAS_FILE_PATH)
-# print(test)
+###############################################################################
+# Intialize connection to database
+db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
+                    + config.POSTGRES_PASSWORD + '@' \
+                    + config.POSTGRES_HOST + ':' \
+                    + config.POSTGRES_PORT + '/' \
+                    + config.POSTGRES_DATABASE
 
-# Import footprint polygons
-FOOTPRINTS_FILE_PATH = os.path.join(DIR_ASSETS, "chipping_norton_building_footprints.geojson")
-osm_footprints = gpd.read_file(FOOTPRINTS_FILE_PATH)
+engine = create_engine(db_connection_url, echo=True)
 
-# Reproject OSM footprints to EPSG:27700, if necessary
-osm_footprints = osm_footprints.to_crs("EPSG:27700")
-#osm_footprints.to_file("coventry_building_footprints.geojson", driver='GeoJSON')
+###############################################################################
+# # Load footprints into database
+# # todo: make sure that footprints are not duplicated in database
+# # todo: add unique row id to footprint database (formerly ogc_fid)
+# # load geojson into gdf
+# files_footprints = os.listdir(DIR_BUILDING_FOOTPRINTS)
+# files_footprints = [file for file in files_footprints if file[-8:] == '.geojson']
+#
+# gdf_footprint_list = []
+# for file_footprint in files_footprints:
+#     file_path_footprint = os.path.join(DIR_BUILDING_FOOTPRINTS, file_footprint)
+#     gdf_footprint_list.append(gpd.read_file(file_path_footprint))
+#
+# gdf_footprints = gdf_footprint_list[0]
+# for i in np.arange(1, len(gdf_footprint_list)):
+#     gdf_footprints.append(gdf_footprint_list[i])
+#
+# gdf_footprints = gdf_footprints.to_crs(STANDARD_SRID)
+#
+# gdf_footprints.to_postgis(
+#     'footprints',
+#     engine,
+#     if_exists='append',
+#     index=False,
+#     dtype={'geometry': Geometry(geometry_type='POLYGON', srid=STANDARD_SRID)}
+# )
 
-# Buffer polygons a bit to capture the building footprint better
-osm_footprints["geometry"] = osm_footprints["geometry"].buffer(1)
+###############################################################################
+# Load point cloud data into database
 
-footprint_list = osm_footprints['geometry'].tolist()
+# get files in directory
+files_uk_lidar = os.listdir(DIR_LAS_FILES)
 
-# Select only polygons which are within the LiDAR tile and save their WKT string
-lidar_bounding_box = utils.create_tile_bounding_box(LAS_FILE_PATH)
-polys = [elem.wkt for elem in footprint_list if isinstance(elem, shapely.geometry.polygon.Polygon) and lidar_bounding_box.contains(elem.centroid)]
-print(f"Number of relevant polygons: {len(polys)}")
+# check which laz files have not yet been unpacked
+laz_files = [file for file in files_uk_lidar if file[-4:] == ".laz"]
+las_files = [file for file in files_uk_lidar if file[-4:] == ".las"]
+unpacked_files = [laz_file for laz_file in laz_files if laz_file[:-4] + '.las' in las_files]
 
-# crop LiDAR data in footprints using pdal
-sample_size = 1
-run_pdal_pipeline(footprint_list=polys, las_file_path=LAS_FILE_PATH, random_sample_size=sample_size)
+# unzip LAZ files, if corresponding LAS file does not exist
+for unpacked_file in unpacked_files:
+    # unzip laz to las
+    in_laz = os.path.join(DIR_LAS_FILES, unpacked_file)
+    out_las = os.path.join(DIR_LAS_FILES, unpacked_file[:-4] + '.las')
+    las = laspy.read(in_laz)
+    las = laspy.convert(las)
+    las.write(out_las)
 
-# load and postprocess cropped LiDAR point cloud examples
-point_cloud_examples = []
-point_cloud_filenames = []
+    # load las files into database
+    las_to_db_pipeline = {
+        "pipeline": [
+            {
+                "type": "readers.las",
+                "filename": out_las,
+                "spatialreference": "EPSG:27700"
+            },
+            {
+                "type": "filters.chipper",
+                "capacity": 400
+            },
+            {
+                "type": "writers.pgpointcloud",
+                "connection": "host='%s' dbname='%s' user='%s' password='%s' port='%s'" %
+                              (config.POSTGRES_HOST, config.POSTGRES_DATABASE,
+                               config.POSTGRES_USER, config.POSTGRES_PASSWORD,
+                               config.POSTGRES_PORT),
+                "schema": "public",
+                "table": "uk_lidar_data",
+                "compression": "dimensional",
+                "srid": "27700"
+            }
+        ]
+    }
+    # todo: fix pipeline to load las data into database from python
+    file_path_pdal_las_to_db = os.path.join(DIR_BASE, "pdal_las_to_db.json")
+    with open(file_path_pdal_las_to_db, "w") as f:
+        json.dump(las_to_db_pipeline, f)
+    os.system("pdal pipeline --input %s" %file_path_pdal_las_to_db)
 
-for file_path in os.listdir(os.getcwd()):
+###############################################################################
+# Determine scaling factor (max x/y/z of all points)
+# todo: determine scaling factor based on lidar points in database
+scaling_factor = 100
 
-    # All PDAL-based output files start with "cropped"
-    if file_path.startswith("cropped"):
+###############################################################################
+# Fetch cropped point clouds from database
 
-        las_point_cloud = laspy.read(file_path)
-        point_count = len(las_point_cloud.points)
+# query to fetch points within building footprints as multipoint grouped by building.
+# IMPORTANT: query with geopandas requires a geom column in database to create a GeoDataFrame
 
-        if point_count < POINT_COUNT_THRESHOLD:
-            os.remove(file_path)
+# SQL Query explanation:
+# with footprints: defines prepares footprints from footprint table
+# with patch_unions: crops the point clouds and prepares a pointcloud union per building
+# with building_pc: transforms the pointcloud unions into multi points, grouped per building
+# select: fetches the multipoints per building and adds additional information:
+#   - ogc_fid: id of entry in footprint database (1 ... n)
+#   - geom: multipoint of pointcloud cropped by building footprint outline
+#   - num_p_in_pc: number of points in pointcloud
+#   - fp_geom: footprint polygon
+#   - osm_id: OSM id of footprint, prefix is way/ or /relation
 
-        else:
+# query is dynamically adapted by the number of requested footprints (num_footprints) as well as the sample size
+# of the pointclouds (POINT_COUNT_THRESHOLD)
 
-            numpy_point_cloud = utils._convert_las_to_numpy(las_point_cloud)
-            numpy_point_cloud = utils._sample_random_points(x=numpy_point_cloud, random_sample_size=POINT_COUNT_THRESHOLD)
-            numpy_point_cloud = numpy_point_cloud[np.newaxis, ...]
+sql_query_grouped_points = (
+        """
+    with footprints as (
+        select st_buffer(st_transform(geometry, 27700), 10) fp, footprints.ogc_fid ogc_fid, footprints.id osm_id 
+        from footprints
+        where footprints.ogc_fid < %s
+    ),
+    patch_unions as (
+        select fc.ogc_fid, pc_union(pc_intersection(pa, fc.fp)) pau
+        from uk_lidar_data lp
+        inner join footprints fc on pc_intersects(lp.pa, fc.fp) 
+        group by fc.ogc_fid 
+    ), 
+    building_pc as (
+        select ogc_fid, st_union(geom) geom
+        from (
+            select ogc_fid, pc_explode(pau) p, pc_explode(pau)::geometry geom
+            from patch_unions
+        ) po
+        group by ogc_fid 
+    )
+    select bpc.ogc_fid, bpc.geom, st_numgeometries(geom) num_p_in_pc, fp.fp fp_geom, fp.osm_id
+    from building_pc bpc
+    left join footprints fp on bpc.ogc_fid = fp.ogc_fid 
+    where st_numgeometries(geom) > %s
+    """ % (NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD)
+)
 
-            point_cloud_examples.append(numpy_point_cloud)
-            point_cloud_filenames.append(file_path)
+# start timer
+start_time = time.perf_counter()
+# actual fetching step
+gdf = gpd.GeoDataFrame.from_postgis(sql_query_grouped_points, engine)
+# end timer
+elapsed_time = time.perf_counter() - start_time
+print("Elapsed time: %s s\nTime per footprint %s s"
+      % (elapsed_time, elapsed_time / NUMBER_OF_FOOTPRINTS))
 
-point_cloud_examples = np.concatenate(point_cloud_examples, axis=0)
-point_cloud_examples.shape
+###############################################################################
+# Convert fetched building point clouds to numpy
+# make sure all building point clouds have enough points,
+# although sql query should already ensure this
+do_pointclouds_have_enough_points = \
+    (np.array([len(g.geoms) for g in gdf.geom]) >= POINT_COUNT_THRESHOLD).all()
+assert do_pointclouds_have_enough_points, \
+    'not all gdf entries have the required amount of points'
 
-# visualize cropped point cloud examples
-visualization.visualize_3d_array(point_cloud_examples, point_cloud_filenames, example_ID=3)
+# apply normalization function to entire dataframe
+lidar_numpy_list = list(
+    gdf.geom.apply(
+        normalize_geom,
+        args=[scaling_factor, POINT_COUNT_THRESHOLD])
+)
+
+###############################################################################
+# Save building point clouds as npz
+# todo: code the saving to npz function
+
+###############################################################################
+# Visualize example data before and after normalization
+for i, lidar_pc in enumerate(lidar_numpy_list):
+    # visualize non normalized buildings
+    lidar_pc_non_normalized = convert_multipoint_to_numpy(gdf.iloc[i].geom)
+    visualize_single_3d_point_cloud(
+        lidar_pc_non_normalized,
+        title=str(i),
+        save_dir=DIR_VISUALIZATION,
+        show=False
+    )
+    # visualize normalized
+    visualize_single_3d_point_cloud(
+        lidar_pc,
+        title=str(i) + 'normalized',
+        save_dir=DIR_VISUALIZATION,
+        show=False
+    )
