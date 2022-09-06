@@ -5,7 +5,9 @@ sql_test_query = "select *, f.wkb_geometry geom from footprints f"
 
 # query to receive all points in footprints as a row. all point information is fetched. watch out, this could become
 # a massive dataframe
-num_footprints = 10
+NUMBER_OF_FOOTPRINTS = 10
+DB_TABLE_NAME = 'uk_lidar_data'
+
 sql_query_all_points = (
     """ with footprints as (
             select st_buffer(st_transform(wkb_geometry, 27700), 3) fp, footprints.ogc_fid id
@@ -14,7 +16,7 @@ sql_query_all_points = (
         ),
         patch_unions as (
             select fc.id, pc_union(pc_intersection(pa, fc.fp)) pau
-            from pointcloud_test lp
+            from %s lp
             inner join footprints fc on pc_intersects(lp.pa, fc.fp) 
             group by fc.id 
         ),
@@ -39,5 +41,5 @@ sql_query_all_points = (
             pc_get(p, 'Z') Z,
             st_transform(st_force2d(p::geometry), 4326) geom
         from points 
-    """ % num_footprints
+    """ % (NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME)
 )
