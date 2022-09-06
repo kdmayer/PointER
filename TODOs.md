@@ -26,11 +26,21 @@ Author: Sebastian
 - @Kevin: Unify conda environment setup across platforms with conda-lock :+1:
 - @Kevin: Develop method which adds footprint points to LiDAR-based point cloud :+1:
 - @Sebastian: Normalize LiDAR point clouds and save them as .npz format (scaling must be relative to the height of the
- tallest building) --> loop through AOIs, select LiDAR tiles :fire:
-- @Sebastian: visualize more buildings and do sanity check of normalization (e.g. tower of bliss tweed mill)
-- @Sebastian: Contact verisk again for building footprints. :fire:
+ tallest building) --> loop through AOIs, select LiDAR tiles :+1:
+- @Sebastian: visualize more buildings and do sanity check of normalization (e.g. tower of bliss tweed mill) :+1:
+- @Sebastian: Contact verisk again for building footprints. :+1:
+
+---
+Date: 6/9/22
+Author: Kevin
+- @Sebastian: Inspect quality of Verisk footprints in QGIS :fire:
+- @Sebastian: Run through Postgres pipeline setup from scratch and adjust docs accordingly (separate markdown) :fire:
+- @Sebastian: Modularize code base for pg-pointcloud script :fire:
+- @TBD: Integrate ground points derived from footprint polygons (demo notebook) :fire:
+- @Kevin: Execute and test pg-pointcloud script :fire: 
+- @Kevin: Re-write pg-pointcloud script in an object-oriented fashion :fire: 
 
 Icons:
 
 - Resolved: :+1:
-- Unresolved: :fire:re:
+- Unresolved: :fire:
