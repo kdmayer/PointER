@@ -24,7 +24,7 @@ Author: Sebastian
 Date: 31/8/22
 Author: Sebastian
 - @Kevin: Unify conda environment setup across platforms with conda-lock :+1:
-- @Kevin: Develop method which adds footprint points to LiDAR-based point cloud :fire:
+- @Kevin: Develop method which adds footprint points to LiDAR-based point cloud :+1:
 - @Sebastian: Normalize LiDAR point clouds and save them as .npz format (scaling must be relative to the height of the
  tallest building) --> loop through AOIs, select LiDAR tiles :fire:
 - @Sebastian: visualize more buildings and do sanity check of normalization (e.g. tower of bliss tweed mill)
