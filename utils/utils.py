@@ -1,5 +1,8 @@
+from geoalchemy2 import WKBElement
+from geoalchemy2.shape import to_shape
 from shapely.geometry import box
 
+import geopandas as gpd
 import numpy as np
 
 import laspy
@@ -29,7 +32,8 @@ def _convert_las_to_numpy(las_data=None):
 
 
 def convert_multipoint_to_numpy(mp: shapely.geometry.MultiPoint = None):
-    lidar_numpy = np.array([(g.x, g.y, g.z) for g in mp.geoms])
+    mpl = list(mp)
+    lidar_numpy = np.array([(pt.x, pt.y, pt.z) for pt in mpl])
     return lidar_numpy
 
 
@@ -38,6 +42,17 @@ def convert_numpy_to_multipoint(lidar_numpy: np.ndarray = None):
     mp = shapely.geometry.MultiPoint(lidar_numpy)
     return mp
 
+
+def gdf_fp_geometries_wkb_to_shape(gdf: gpd.GeoDataFrame = None):
+    # make sure gdf has fp_geom column
+    assert 'fp_geom' in gdf.columns
+    # define wkb elements
+    gdf_fp_geoms = gdf.fp_geom.apply(WKBElement)
+    # convert wkb elements to shapes
+    gdf_fp_geoms = gdf_fp_geoms.apply(to_shape)
+    # replace fp_geom column with shapes
+    gdf['fp_geom'] = gdf_fp_geoms
+    return gdf
 
 def _sample_random_points(x: np.ndarray = None, random_sample_size: int = None):
     rng = np.random.default_rng()
@@ -74,7 +89,7 @@ def create_tile_bounding_box(original_las_data_filepath: str = None):
 
 def normalize_geom(geom: shapely.geometry = None, scaling_factor: int = 1000, random_sample_size: int = None):
     # convert multipoint to numpy array
-    lidar_numpy = _convert_multipoint_to_numpy(geom)
+    lidar_numpy = convert_multipoint_to_numpy(geom)
     # scale x, y, z coordinates (0, 1, 2) according to scaling factor
     for i in np.arange(0, 3):
         lidar_numpy[:, i] = (lidar_numpy[:, i] - lidar_numpy[:, i].min()) / scaling_factor
