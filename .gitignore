@@ -8,7 +8,7 @@ __pycache__/
 
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
-!experimentation/Download_LiDAR_Tiles.ipynb
+!experimentation/Merge_footprint_and_LiDAR_points.ipynb
 
 archive/*
 
