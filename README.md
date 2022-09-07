@@ -1,52 +1,50 @@
 ## Setup Instructions
 
-Clone repo to your local machine. Navigate into root directory.
+### Install given conda environment
 
-To get started, initialize and activate the environment with
+Clone the GitHub repository to your local machine. Navigate into the root directory.
 
-    conda env create --file=environment.yml
+In your conda base environment, install your environment with 
+
+    conda-lock install [-p {prefix}|-n {name}]
+
+Note: 
+
+- The -p argument specifies your local OS and can be either *linux-64*, *osx-64*, or *win-64*
+- The -n argument will overwrite the name specified in the environment.yml file
+
+Example: 
+
+    conda-lock install -n cs224w
+
+Then, activate your environment with:
+
     conda activate cs224w
 
-## Get started with postgres database and pgpointcloud extension
-### Create database and install extensions
-- if not yet installed: install postgres (https://ubuntu.com/server/docs/databases-postgresql)
-- connect to postgres server (psql -U postgres)
-- create a new database https://www.postgresql.org/docs/current/sql-createdatabase.html
-- install postgis and pgpointcloud extension 
-	- install extensions on machine: 
-	apt install postgis; apt install postgresql-10-pgpointcloud; apt install postgresql-10-pgpointcloud_postgis
-	- install extensions in database:
-	CREATE EXTENSION postgis;
-	CREATE EXTENSION pointcloud;
-	CREATE EXTENSION pointcloud_postgis;
-### Populate database with lidar pointcloud data and building footprint data
-- install pdal if not yet installed
-- install laszip to be able to run pdal pipeline with .LAZ file.
-	- in case of issues: https://github.com/laspy/laspy/issues/79
-- unzip .LAZ file to .las file
-	- laszip [laszipfilename.laz]
-- run pdal pipeline to insert pointcloud data from .LAS file into database (can take a couple of minutes)
-	- pdal pipeline --input pipeline_LAS_to_db.json
-- insert building footprints into database using ogr2ogr
-	- ogr2ogr -f "PostgreSQL" PG:"host=localhost dbname=postgres user=krapf password=krapf port=5432" coventry_building_footprints.geojson -nln footprints
+You are ready to go.
 
-### Create spatial indexes to speed up SQL queries significantly
-- index for building footprints (might already contain spatial index because of ogr2ogr import)
-	- CREATE INDEX geoid ON footprints USING GIST (wkb_geometry); 
-	- VACUUM ANALYZE footprints (wkb_geometry);
-- index for point cloud data 
-	- CREATE INDEX patches_idx on pointcloud_test using GIST (Geometry(pa));  
-	- VACUUM ANALYZE pointcloud_test (pa);
+### Adapt given conda environment
 
+If you need to add new **conda** core dependencies to the existing environment.yml, adapt the environment.yml file manually.
 
-Now you are ready to use the pgpointcloud functions to crop lidar points according to building footprints
-    
- ## TODOs.md
+Afterwards,
+
+    pip install conda-lock 
+    conda-lock -f environment.yml 
+    conda-lock install [-p {prefix}|-n {name}]
+
+If you need to add new **pip** core dependencies, install them manually after going through the set up with conda-lock.
+
+Example:
+
+    pip install <new_core_dependency>
+
+## TODOs.md
  
  TODOs.md helps us to keep track of our progress and TODO items. 
  
  Please specify the date and the author name when adding new TODOs. 
-    
+
 ## Important Note: 
 
  - **Please do not push your changes directly to the main branch.**
