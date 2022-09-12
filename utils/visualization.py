@@ -1,9 +1,12 @@
 from typing import List
 
-import plotly.graph_objects as go
+import geopandas as gpd
 import numpy as np
+import plotly.graph_objects as go
 
 import os
+
+from utils.utils import convert_multipoint_to_numpy
 
 def visualize_3d_array(point_cloud_array: np.ndarray = None, file_name_list: List = None, example_ID=None):
     x = point_cloud_array[example_ID, :, 0].flatten()
@@ -36,3 +39,25 @@ def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title:
         save_path = os.path.join(save_dir, title + '.html')
         fig.write_html(save_path)
     return
+
+
+def visualize_example_pointclouds(lidar_numpy_list: list, gdf: gpd.Geodataframe, DIR_VISUALIZATION: str,
+                                  NUMBER_EXAMPLE_VISUALIZATIONS: int = 1):
+    # IMPORTANT: lidar_numpy_list order must be the same as gdf to ensure visualization of same building
+    for i, lidar_pc in enumerate(lidar_numpy_list):
+        if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
+            # visualize non normalized buildings
+            lidar_pc_non_normalized = convert_multipoint_to_numpy(gdf.iloc[i].geom)
+            visualize_single_3d_point_cloud(
+                lidar_pc_non_normalized,
+                title=str(i),
+                save_dir=DIR_VISUALIZATION,
+                show=False
+            )
+            # visualize normalized
+            visualize_single_3d_point_cloud(
+                lidar_pc,
+                title=str(i) + '_normalized',
+                save_dir=DIR_VISUALIZATION,
+                show=False
+            )
