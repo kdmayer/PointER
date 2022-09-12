@@ -21,20 +21,20 @@ def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME
     files_footprints = os.listdir(DIR_BUILDING_FOOTPRINTS)
     files_footprints = [file for file in files_footprints if file[-8:] == '.geojson']
 
-    # todo: fix bug when appending multiple footprints to one dataframe.
     # get all footprints data in directory
-    gdf_footprint_list = []
-    for file_footprint in files_footprints:
+    for i, file_footprint in enumerate(files_footprints):
         file_path_footprint = os.path.join(DIR_BUILDING_FOOTPRINTS, file_footprint)
-        gdf_footprint_list.append(gpd.read_file(file_path_footprint))
+        gdf_footprint = gpd.read_file(file_path_footprint)
 
-    # append multiple footprints data
-    gdf_footprints = gdf_footprint_list[0]
-    for i in np.arange(1, len(gdf_footprint_list)):
-        gdf_footprints = gdf_footprints.append(gdf_footprint_list[i])
+        # make sure CRS is correct
+        if gdf_footprint.crs != STANDARD_CRS:
+            gdf_footprint = gdf_footprint.to_crs(STANDARD_CRS)
 
-    if gdf_footprints.crs != STANDARD_CRS:
-        gdf_footprints = gdf_footprints.to_crs(STANDARD_CRS)
+        # initialize first geodataframe
+        if i == 0:
+            gdf_footprints = gdf_footprint
+        else:
+            gdf_footprints = gdf_footprints.append(gdf_footprint)
 
     # write footprints data to database
     gdf_footprints.to_postgis(
@@ -45,10 +45,7 @@ def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME
         index_label='id_fp',
         dtype={'geometry': Geometry(geometry_type='POLYGON', srid=STANDARD_CRS)}
     )
-
-    # todo: index reset
-
-    return
+    return gdf_footprints
 
 ###############################################################################
 # Load point cloud data into database
@@ -106,10 +103,7 @@ def load_las_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     return
 
 ###############################################################################
-def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR: str, new_geo_id_pointclouds: bool):
-
-    # todo: find how to update geo_id
-
+def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR: str):
     # Add geoindex to footprint and lidar tables
     # We use psycopg2 for the sql query, because the VACUUM function did not work
     # with sqlalchemy (transaction block error)
@@ -129,6 +123,10 @@ def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR
     sql_query_geoindex_pointclouds_vacuum = (
             "VACUUM ANALYZE %s (pa)" % DB_TABLE_NAME_LIDAR
     )
+    sql_query_check_geoid_pa_lidar = (
+        "SELECT indexname = 'geoid_pa' FROM pg_indexes WHERE tablename = '%s'"
+        % DB_TABLE_NAME_LIDAR
+    )
 
     # create connection and cursor
     connection_psycopg2 = psycopg2.connect(db_connection_url)
@@ -140,8 +138,12 @@ def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR
     # execute vacuuming footprints (used to improve geoindex)
     cursor.execute(sql_query_geoindex_footprints_vacuum)
 
+    # check if lidar table already contains geo index
+    cursor.execute(sql_query_check_geoid_pa_lidar)
+    geoindex_exists = np.array(cursor.fetchall()).any()
+
     # add geoindex to lidar table, only if data was added, otherwise, geoindex already exists
-    if len(new_geo_id_pointclouds) > 0:
+    if not geoindex_exists:
         # execute geoindexing lidar
         cursor.execute(sql_query_geoindex_pointclouds)
         # execute vacuuming lidar (used to improve geoindex)
@@ -289,8 +291,7 @@ DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
 DB_TABLE_NAME_FOOTRPINTS = 'footprints'
 
 # Define configuration
-# todo: if number of fp empty do all
-NUMBER_OF_FOOTPRINTS = 600 # define how many footprints should be used for cropping
+NUMBER_OF_FOOTPRINTS = 600 # define how many footprints should be used for cropping, use "None" to use all footprints
 POINT_COUNT_THRESHOLD = 1000 # define minimum points in pointcloud, smaller pointclouds are dismissed
 NUMBER_EXAMPLE_VISUALIZATIONS = 30 # define how many example 3D plots should be created
 STANDARD_CRS = 27700 # define the CRS. needs to be same for footprints and lidar data
@@ -305,13 +306,18 @@ db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
 engine = create_engine(db_connection_url, echo=False)
 
 #####################   Actual Pipeline   #####################################
-
+# todo: include approach which allows appending new data to database. difficulty: making sure that there are no duplicates
 # load footprint geojsons into database
-load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS)
+gdf_footprints = load_geojson_footprints_into_database(
+    DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS
+)
+# adapt NUMBER_OF_FOOTPRINTS to use all footprints if None
+if NUMBER_OF_FOOTPRINTS == None:
+    NUMBER_OF_FOOTPRINTS = gdf_footprints.index.max() + 1
 # Load point cloud data into database
 load_las_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR)
 # Add geoindex to footprint and lidar tables
-add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS, DB_TABLE_NAME_LIDAR, new_geo_id_pointclouds)
+add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS, DB_TABLE_NAME_LIDAR)
 # Fetch cropped point clouds from database
 gdf = crop_and_fetch_pointclouds_per_building(DB_TABLE_NAME_FOOTRPINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
                                         POINT_COUNT_THRESHOLD, engine)

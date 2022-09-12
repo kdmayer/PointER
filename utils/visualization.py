@@ -41,7 +41,7 @@ def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title:
     return
 
 
-def visualize_example_pointclouds(lidar_numpy_list: list, gdf: gpd.Geodataframe, DIR_VISUALIZATION: str,
+def visualize_example_pointclouds(lidar_numpy_list: list, gdf: gpd.GeoDataFrame, DIR_VISUALIZATION: str,
                                   NUMBER_EXAMPLE_VISUALIZATIONS: int = 1):
     # IMPORTANT: lidar_numpy_list order must be the same as gdf to ensure visualization of same building
     for i, lidar_pc in enumerate(lidar_numpy_list):
