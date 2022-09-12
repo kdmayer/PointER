@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 
 import config as config
 from utils.visualization import visualize_example_pointclouds
-from utils.utils import normalize_geom, convert_multipoint_to_numpy, gdf_fp_geometries_wkb_to_shape
+from utils.utils import normalize_geom, gdf_fp_geometries_wkb_to_shape
 
 
 def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS):
