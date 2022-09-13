@@ -34,7 +34,7 @@ def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME
         if i == 0:
             gdf_footprints = gdf_footprint
         else:
-            gdf_footprints = gdf_footprints.append(gdf_footprint)
+            gdf_footprints = gdf_footprints.append(gdf_footprint, ignore_index=True)
 
     # write footprints data to database
     gdf_footprints.to_postgis(
@@ -90,7 +90,8 @@ def load_las_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
                     "schema": "public",
                     "table": DB_TABLE_NAME_LIDAR,
                     "compression": "dimensional",
-                    "srid": "27700"
+                    "srid": "27700",
+                    "overwrite": "false"
                 }
             ]
         }
@@ -291,7 +292,7 @@ DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
 DB_TABLE_NAME_FOOTRPINTS = 'footprints'
 
 # Define configuration
-NUMBER_OF_FOOTPRINTS = 600 # define how many footprints should be used for cropping, use "None" to use all footprints
+NUMBER_OF_FOOTPRINTS = None # define how many footprints should be used for cropping, use "None" to use all footprints
 POINT_COUNT_THRESHOLD = 1000 # define minimum points in pointcloud, smaller pointclouds are dismissed
 NUMBER_EXAMPLE_VISUALIZATIONS = 30 # define how many example 3D plots should be created
 STANDARD_CRS = 27700 # define the CRS. needs to be same for footprints and lidar data

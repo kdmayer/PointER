@@ -14,5 +14,7 @@ dependencies:
   - plotly
   - tqdm
   - black
+  - sqlalchemy
+  - geoalchemy2
 
 prefix: /usr/local/anaconda3/envs/cs224w
