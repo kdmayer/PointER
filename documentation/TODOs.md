@@ -33,9 +33,20 @@ Author: Sebastian
 ---
 Date: 6/9/22
 Author: Kevin
-- @Sebastian: Inspect quality of Verisk footprints in QGIS :fire:
-- @Sebastian: Run through Postgres pipeline setup from scratch and adjust docs accordingly (separate markdown) :fire:
-- @Sebastian: Modularize code base for pg-pointcloud script :fire:
+- @Sebastian: Inspect quality of Verisk footprints in QGIS :+1:
+- @Sebastian: Run through Postgres pipeline setup from scratch and adjust docs accordingly (separate markdown) :+1:
+- @Sebastian: Modularize code base for pg-pointcloud script :+1:
+- @TBD: Integrate ground points derived from footprint polygons (demo notebook) :fire:
+- @Kevin: Execute and test pg-pointcloud script :fire: 
+- @Kevin: Re-write pg-pointcloud script in an object-oriented fashion :fire: 
+
+---
+Date: 14/9/22
+Author: Kevin
+- @All: Determine areas of interest for case study in the UK :+1:
+- @All: Decide on footprint data source: Verisk vs OSM :fire:
+- @Sebastian: Run pipeline on first set of AOIs and save unnormalized .npz files :fire:
+- @Sebastian: Check geocoding service utilized by TUM :fire:
 - @TBD: Integrate ground points derived from footprint polygons (demo notebook) :fire:
 - @Kevin: Execute and test pg-pointcloud script :fire: 
 - @Kevin: Re-write pg-pointcloud script in an object-oriented fashion :fire: 

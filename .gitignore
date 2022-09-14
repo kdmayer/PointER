@@ -6,6 +6,10 @@ __pycache__/
 !environment.yml
 !conda-lock.yml
 
+documentation/*
+!documentation/AOIs.md
+!documentation/TODOs.md
+
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
 !experimentation/Merge_footprint_and_LiDAR_points.ipynb
@@ -18,6 +22,7 @@ assets/*
 !assets/cropped_24.las
 !assets/cropped_31.las
 !assets/cropped_41.las
+
 
 assets/images/*
 !assets/images/example.png
