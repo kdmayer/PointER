@@ -49,7 +49,7 @@ def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME
 
 ###############################################################################
 # Load point cloud data into database
-def load_las_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
+def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     # get files in directory
     files_uk_lidar = os.listdir(DIR_LAS_FILES)
 
@@ -258,7 +258,7 @@ def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
 
 ###############################################################################
 # Save building point clouds as npz
-def savez_lidar_numpy_list(lidar_numpy_list, gdf):
+def save_lidar_numpy_list(lidar_numpy_list, gdf):
     # IMPORTANT: lidar_numpy_list order must be the same as gdf to ensure correct naming of .npz
     for i, lidar_pc in enumerate(lidar_numpy_list):
         npz_file_name = str(int(gdf.iloc[i].fp_geom.centroid.x)) + "_" + \
@@ -284,12 +284,12 @@ assert DIR_ASSETS.split("\\")[-1] == 'assets', \
     "You are not in the assets directory"
 
 DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
-DIR_LAS_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
+DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
 DIR_NPZ = os.path.join(DIR_ASSETS, "pointcloud_npz")
 DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
 
 DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
-DB_TABLE_NAME_FOOTRPINTS = 'footprints'
+DB_TABLE_NAME_FOOTPRINTS = 'footprints'
 
 # Define configuration
 NUMBER_OF_FOOTPRINTS = None # define how many footprints should be used for cropping, use "None" to use all footprints
@@ -310,23 +310,24 @@ engine = create_engine(db_connection_url, echo=False)
 # todo: include approach which allows appending new data to database. difficulty: making sure that there are no duplicates
 # load footprint geojsons into database
 gdf_footprints = load_geojson_footprints_into_database(
-    DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS
+    DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTPRINTS, engine, STANDARD_CRS
 )
 # adapt NUMBER_OF_FOOTPRINTS to use all footprints if None
 if NUMBER_OF_FOOTPRINTS == None:
     NUMBER_OF_FOOTPRINTS = gdf_footprints.index.max() + 1
 # Load point cloud data into database
-load_las_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR)
+load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 # Add geoindex to footprint and lidar tables
-add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS, DB_TABLE_NAME_LIDAR)
+add_geoindex_to_databases(DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_LIDAR)
 # Fetch cropped point clouds from database
-gdf = crop_and_fetch_pointclouds_per_building(DB_TABLE_NAME_FOOTRPINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
-                                        POINT_COUNT_THRESHOLD, engine)
+gdf = crop_and_fetch_pointclouds_per_building(DB_TABLE_NAME_FOOTPRINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
+                                              POINT_COUNT_THRESHOLD, engine)
+# Todo: Integrate footprint points into respective building point cloud
 # Determine scaling factor (max delta_x/delta_y/delta_z of all points)
 scaling_factor = get_scaling_factor(gdf)
 # Convert fetched building point clouds to numpy
 lidar_numpy_list = pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD)
 # Save building point clouds as npz
-savez_lidar_numpy_list(lidar_numpy_list, gdf)
+save_lidar_numpy_list(lidar_numpy_list, gdf)
 # Visualize example data before and after normalization
 visualize_example_pointclouds(lidar_numpy_list, gdf, DIR_VISUALIZATION, NUMBER_EXAMPLE_VISUALIZATIONS)

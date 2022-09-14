@@ -44,7 +44,7 @@ Author: Kevin
 Date: 14/9/22
 Author: Kevin
 - @All: Determine areas of interest for case study in the UK :+1:
-- @All: Decide on footprint data source: Verisk vs OSM :fire:
+- @All: Decide on footprint data source: **Verisk** vs OSM (tendency towards Verisk, check license) :fire:
 - @Sebastian: Run pipeline on first set of AOIs and save unnormalized .npz files :fire:
 - @Sebastian: Check geocoding service utilized by TUM :fire:
 - @TBD: Integrate ground points derived from footprint polygons (demo notebook) :fire:
