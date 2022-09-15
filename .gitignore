@@ -9,6 +9,7 @@ __pycache__/
 documentation/*
 !documentation/AOIs.md
 !documentation/TODOs.md
+!documentation/DB_SETUP.md
 
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
@@ -23,11 +24,8 @@ assets/*
 !assets/cropped_31.las
 !assets/cropped_41.las
 
-
 assets/images/*
 !assets/images/example.png
 
 venv/*
 
-!environment.yml
-config.py
