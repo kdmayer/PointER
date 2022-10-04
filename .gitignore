@@ -2,6 +2,7 @@
 __pycache__/
 *.csv
 .DS_Store
+.env
 
 !environment.yml
 !conda-lock.yml

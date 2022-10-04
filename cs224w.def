@@ -1,0 +1,12 @@
+Bootstrap: docker
+From: pgpointcloud/pointcloud:latest
+
+%post
+    git clone https://github.com/kdmayer/CS224W_LIDAR.git
+    cd CS224W_LIDAR.git
+    pip install conda-lock
+    conda-lock install -n cs224w
+    conda activate cs224w
+
+%runscript
+    echo "Container was created"
