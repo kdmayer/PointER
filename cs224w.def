@@ -2,10 +2,18 @@ Bootstrap: docker
 From: pgpointcloud/pointcloud:latest
 
 %post
+    apt-get update
+    apt-get install git -y
+    apt-get install wget
     git clone https://github.com/kdmayer/CS224W_LIDAR.git
-    cd CS224W_LIDAR.git
+    cd CS224W_LIDAR
+    apt-get install pip -y
+    mkdir miniconda3
+    wget -O miniconda3/miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    bash miniconda3/miniconda.sh -b
     pip install conda-lock
     conda-lock install -n cs224w
+    python -c 'import sys; print sys.version_info'
     conda activate cs224w
 
 %runscript
