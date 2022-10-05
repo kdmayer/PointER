@@ -105,7 +105,7 @@ And activate our conda environment with
 
 You are all set.
 
-### Run Jupyter Notebook from Vagrant VM
+### Run Jupyter Notebook from Vagrant VM:
 
 In your vagrant container with the activated cs224w environment, run
 
