@@ -19,6 +19,14 @@ And specify the desired disk size in the Vagrantfile
         config.disksize.size = '50GB'
     end
 
+In order to use Jupyter Notebook from our VM, we also need to change the following line in our Vagrantfile
+
+    # config.vm.network "forwarded_port", guest: 80, host: 8080
+
+to
+
+    config.vm.network "forwarded_port", guest: 8888, host: 8888
+
 Afterwards, spin up the virtual machine with
 
     vagrant up && \
@@ -96,6 +104,16 @@ And activate our conda environment with
     conda activate cs224w
 
 You are all set.
+
+### Run Jupyter Notebook from Vagrant VM
+
+In your vagrant container with the activated cs224w environment, run
+
+    jupyter notebook --ip=0.0.0.0
+
+You can then open the vagrant-based jupyter instance by visiting the following URL
+
+    http://0.0.0.0:8888/tree
 
 ### Note:
 
