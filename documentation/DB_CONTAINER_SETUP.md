@@ -72,7 +72,9 @@ Please note that both commands are needed whenever we connect to the shell of th
 
     singularity shell cs224w.sif
 
-Lastly, add the container as your [Python Interpreter in PyCharm](https://www.jetbrains.com/help/pycharm/configuring-remote-interpreters-via-virtual-boxes.html)
+### Connect PyCharm Interpreter with Singularity Container:
+
+To add the Singularity container as your Python Interpreter in PyCharm [follow these steps](https://www.jetbrains.com/help/pycharm/configuring-remote-interpreters-via-virtual-boxes.html)
 
 In step 3, we specify 
 
@@ -82,9 +84,18 @@ as the python location.
 
 In PyCharm, we can connect to the container by clicking on the downward facing arrow in the terminal menu, and selecting the container
 
-![PDAL Output](https://github.com/kdmayer/CS224W_LIDAR/blob/main/assets/images/example.png)
+![Terminal Options](https://github.com/kdmayer/CS224W_LIDAR/blob/pg_pointcloud_benchmark/assets/images/Terminal.png)
 
+Inside the container, spin up the container shell with 
 
+    singularity shell cs224w.sif
+
+And activate our conda environment with
+
+    source /usr/local/etc/profile.d/conda.sh && \
+    conda activate cs224w
+
+You are all set.
 
 ### Note:
 
