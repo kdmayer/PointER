@@ -19,16 +19,16 @@ experimentation/*
 
 archive/*
 
+assets/images/*
+!assets/images/example.png
+!assets/images/Terminal.png
+
 assets/*
 !assets/coventry_building_footprints.geojson
 !assets/cropped_16.las
 !assets/cropped_24.las
 !assets/cropped_31.las
 !assets/cropped_41.las
-
-assets/images/*
-!assets/images/example.png
-!assets/images/Terminal.png
 
 venv/*
 
