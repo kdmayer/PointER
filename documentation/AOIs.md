@@ -9,12 +9,13 @@ Existing AOIs from previous project:
 
 Ideas for new AOIs:
 
-- District of Liverpool or Manchester
-- District of Edinburgh
-- York
-- Norwich
-- Plymouth
+- District of Liverpool >50% missing footprints in east part. or Manchester inner city seems fine, outer parts show many missing footprints
+- District of Edinburgh: no/few missing footprints
+- York: no/few missing footprints
+- Norwich: ~30% missing footprints in north-east part
+- Plymouth: ~30% missing footprints in north-east part
 
+(missing footprints refer to OSM)
 ### Google Geocoder API
 
 Costs $5/1000 requests. 
