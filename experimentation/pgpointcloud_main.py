@@ -6,6 +6,7 @@ import laspy
 import os
 import pdal
 import psycopg2
+import shapely
 import time
 
 from geoalchemy2 import Geometry
@@ -13,7 +14,7 @@ from sqlalchemy import create_engine
 
 import config as config
 from utils.visualization import visualize_example_pointclouds
-from utils.utils import normalize_geom, gdf_fp_geometries_wkb_to_shape
+from utils.utils import normalize_geom, gdf_fp_geometries_wkb_to_shape, convert_multipoint_to_numpy
 
 
 def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS):
@@ -47,7 +48,7 @@ def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME
     )
     return gdf_footprints
 
-###############################################################################
+
 # Load point cloud data into database
 def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     # get files in directory
@@ -58,8 +59,10 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     las_files = [file for file in files_uk_lidar if file[-4:] == ".las"]
     unpacked_files = [laz_file for laz_file in laz_files if not laz_file[:-4] + '.las' in las_files]
 
+    print('Loading pointcloud data from las to database. This process can take several minutes')
     # unzip LAZ files, if corresponding LAS file does not exist
-    for unpacked_file in unpacked_files:
+    for i, unpacked_file in enumerate(unpacked_files):
+        print('unpacking laz file %s of %s: %s' % (str(i+1), str(len(unpacked_files)), unpacked_file))
         # unzip laz to las
         in_laz = os.path.join(DIR_LAS_FILES, unpacked_file)
         out_las = os.path.join(DIR_LAS_FILES, unpacked_file[:-4] + '.las')
@@ -67,7 +70,6 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
         las = laspy.convert(las)
         las.write(out_las)
 
-        print('Loading pointcloud data from las to database. This process can take several minutes')
 
         # load las files into database
         las_to_db_pipeline = {
@@ -96,14 +98,15 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
             ]
         }
 
+        print('loading laz file %s of %s into database' % (str(i+1), str(len(unpacked_files))))
         pipeline = pdal.Pipeline(json.dumps(las_to_db_pipeline))
         pipeline.execute()
 
-        print('Loading to database finished for tile %s' % out_las)
+    print('Loading data into database finished')
 
     return
 
-###############################################################################
+
 def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR: str):
     # Add geoindex to footprint and lidar tables
     # We use psycopg2 for the sql query, because the VACUUM function did not work
@@ -125,8 +128,8 @@ def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR
             "VACUUM ANALYZE %s (pa)" % DB_TABLE_NAME_LIDAR
     )
     sql_query_check_geoid_pa_lidar = (
-        "SELECT indexname = 'geoid_pa' FROM pg_indexes WHERE tablename = '%s'"
-        % DB_TABLE_NAME_LIDAR
+            "SELECT indexname = 'geoid_pa' FROM pg_indexes WHERE tablename = '%s'"
+            % DB_TABLE_NAME_LIDAR
     )
 
     # create connection and cursor
@@ -157,7 +160,7 @@ def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR
 
     return
 
-###############################################################################
+
 def crop_and_fetch_pointclouds_per_building(
         DB_TABLE_NAME_FOOTRPINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
         POINT_COUNT_THRESHOLD, engine):
@@ -232,11 +235,42 @@ def crop_and_fetch_pointclouds_per_building(
 
     return gdf
 
+
+def add_floor_points_to_points_in_gdf(gdf):
+    pointcloud_with_floor_list = []
+    for i, row in enumerate(gdf.iloc):
+        new_pointcloud = add_floor_points_to_pointcloud(row.fp_geom, row.geom, row.z_min)
+        pointcloud_with_floor_list.append(new_pointcloud)
+        if i % 100 == 0:
+            print('processing pointcloud %s out of %s' %(i, len(gdf)))
+    gdf = gdf.assign(geom=pointcloud_with_floor_list)
+    return gdf
+
+def add_floor_points_to_pointcloud(building_footprint: shapely.geometry.Polygon, pointcloud: shapely.geometry.MultiPoint,
+                                   z_min):
+    # Grid spacing in meters
+    resolution = 0.5
+    lonmin, latmin, lonmax, latmax = building_footprint.bounds
+
+    # construct rectangle of points
+    x, y = np.round(np.meshgrid(np.arange(lonmin, lonmax, resolution), np.arange(latmin, latmax, resolution)), 4)
+    points = list(zip(x.flatten(), y.flatten()))
+
+    # validate each point falls inside shapes and add minimum z-vale of lidar point cloud as floor level
+    valid_points = [(point[0], point[1], z_min) for point in points if
+                    building_footprint.contains(shapely.geometry.Point(point))]
+
+    footprint_multipoint = shapely.geometry.MultiPoint(valid_points)
+    new_multipoint = shapely.ops.unary_union([pointcloud, footprint_multipoint])
+    return new_multipoint
+
+
 ###############################################################################
 def get_scaling_factor(gdf):
     # Determine scaling factor (max delta_x/delta_y/delta_z of all points)
     scaling_factor = np.max(gdf.scaling_factor)
     return scaling_factor
+
 
 ###############################################################################
 def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
@@ -255,6 +289,7 @@ def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
             args=[scaling_factor, POINT_COUNT_THRESHOLD])
     )
     return lidar_numpy_list
+
 
 ###############################################################################
 # Save building point clouds as npz
@@ -292,10 +327,10 @@ DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
 DB_TABLE_NAME_FOOTPRINTS = 'footprints'
 
 # Define configuration
-NUMBER_OF_FOOTPRINTS = None # define how many footprints should be used for cropping, use "None" to use all footprints
-POINT_COUNT_THRESHOLD = 1000 # define minimum points in pointcloud, smaller pointclouds are dismissed
-NUMBER_EXAMPLE_VISUALIZATIONS = 30 # define how many example 3D plots should be created
-STANDARD_CRS = 27700 # define the CRS. needs to be same for footprints and lidar data
+NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be used for cropping, use "None" to use all footprints
+POINT_COUNT_THRESHOLD = 1000  # define minimum points in pointcloud, smaller pointclouds are dismissed
+NUMBER_EXAMPLE_VISUALIZATIONS = 30  # define how many example 3D plots should be created
+STANDARD_CRS = 27700  # define the CRS. needs to be same for footprints and lidar data
 
 # Intialize connection to database
 db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
@@ -322,11 +357,17 @@ add_geoindex_to_databases(DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_LIDAR)
 # Fetch cropped point clouds from database
 gdf = crop_and_fetch_pointclouds_per_building(DB_TABLE_NAME_FOOTPRINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
                                               POINT_COUNT_THRESHOLD, engine)
-# Todo: Integrate footprint points into respective building point cloud
-# Determine scaling factor (max delta_x/delta_y/delta_z of all points)
-scaling_factor = get_scaling_factor(gdf)
-# Convert fetched building point clouds to numpy
-lidar_numpy_list = pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD)
+# add floor points to building pointcloud
+gdf = add_floor_points_to_points_in_gdf(gdf)
+
+# todo: select raw or scaled lidar to npz
+# # Determine scaling factor (max delta_x/delta_y/delta_z of all points)
+# scaling_factor = get_scaling_factor(gdf)
+# # Convert fetched building point clouds to numpy
+# lidar_numpy_list = pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD)
+
+# Save raw pointcloud without threshhold or scaling
+lidar_numpy_list = list(gdf.geom.apply(convert_multipoint_to_numpy))
 # Save building point clouds as npz
 save_lidar_numpy_list(lidar_numpy_list, gdf)
 # Visualize example data before and after normalization
