@@ -2,7 +2,7 @@
 ### Install postgresql and extensions postgis and pgpointcloud on machine
 - first update apt
     
-    
+
     sudo apt update
     
 - if not yet installed: install postgres (https://ubuntu.com/server/docs/databases-postgresql)
@@ -54,3 +54,11 @@
 	CREATE EXTENSION pointcloud_postgis;
 
 
+### Add data to database
+- data sources
+  - footprints: verisk UKBuildings database: https://www.verisk.com/en-gb/3d-visual-intelligence/products/ukbuildings/
+  - pointcloud data: UK National LiDAR Programme: https://www.data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme  
+  - Local Authority Distric Boundaries: https://geoportal.statistics.gov.uk/
+    - download as shapefile
+  - Unique Property Reference Numbers (UPRN) coordinates: https://www.ordnancesurvey.co.uk/business-government/products/open-uprn
+    - download as geopackage

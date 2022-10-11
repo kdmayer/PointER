@@ -162,8 +162,7 @@ def add_geoindex_to_databases(DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR
 
 
 def crop_and_fetch_pointclouds_per_building(
-        DB_TABLE_NAME_FOOTRPINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
-        POINT_COUNT_THRESHOLD, engine):
+        AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine):
     # Fetch cropped point clouds from database
 
     # Query to fetch points within building footprints as multipoint grouped by building.
@@ -185,46 +184,52 @@ def crop_and_fetch_pointclouds_per_building(
 
     sql_query_grouped_points = (
             """
-        with footprints as (
-            select st_buffer(st_transform(fps.geometry, 27700), 10) fp, fps.id_fp, fps.id osm_id 
-            from %s fps
-            where fps.id_fp < %s
-        ),
-        patch_unions as (
-            select fps.id_fp, pc_union(pc_intersection(pa, fps.fp)) pau
-            from %s lp
-            inner join footprints fps on pc_intersects(lp.pa, fps.fp) 
-            group by fps.id_fp 
-        ), 
-        building_pc as (
+            with area_of_interest as (
+                select st_transform(geom, 27700) geom
+                from local_authority_boundaries lab
+                where lab.lad21cd = \'%s\' 
+            ),
+            footprints as (
+                select st_buffer(fps.geom, %s) fp_geom, fps.id id_fp
+                from footprints_verisk fps, area_of_interest
+                where st_intersects(fps.geom, area_of_interest.geom)
+                limit %s
+            ),
+            patch_unions as (
+                select fps.id_fp, pc_union(pc_intersection(pa, fps.fp_geom)) pau
+                from uk_lidar_data lp
+                inner join footprints fps on pc_intersects(lp.pa, fps.fp_geom) 
+                group by fps.id_fp 
+            ),
+            building_pc as (
+                select 
+                    id_fp, 
+                    st_union(geom) geom,
+                    max(pc_get(p, 'X')) - min(pc_get(p, 'X')) delta_x,
+                    max(pc_get(p, 'Y')) - min(pc_get(p, 'Y')) delta_y,
+                    max(pc_get(p, 'Z')) - min(pc_get(p, 'Z')) delta_z,
+                    min(pc_get(p, 'Z')) z_min
+                from (
+                    select id_fp, pc_explode(pau) p, pc_explode(pau)::geometry geom
+                        from patch_unions
+                    ) po
+                    group by id_fp 
+            )
             select 
-                id_fp, 
-                st_union(geom) geom,
-                max(pc_get(p, 'X')) - min(pc_get(p, 'X')) delta_x,
-                max(pc_get(p, 'Y')) - min(pc_get(p, 'Y')) delta_y,
-                max(pc_get(p, 'Z')) - min(pc_get(p, 'Z')) delta_z,
-                min(pc_get(p, 'Z')) z_min
-            from (
-                select id_fp, pc_explode(pau) p, pc_explode(pau)::geometry geom
-                from patch_unions
-            ) po
-            group by id_fp 
-        )
-        select 
-            bpc.id_fp,
-            bpc.geom,
-            fps.fp fp_geom,
-            fps.osm_id,
-            bpc.delta_x,
-            bpc.delta_y,
-            bpc.delta_z,
-            bpc.z_min,
-            greatest(bpc.delta_x, bpc.delta_y, bpc.delta_z) scaling_factor,
-            st_numgeometries(geom) num_p_in_pc
-        from building_pc bpc
-        left join footprints fps on bpc.id_fp = fps.id_fp 
-        where st_numgeometries(geom) > %s
-        """ % (DB_TABLE_NAME_FOOTRPINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR, POINT_COUNT_THRESHOLD)
+                bpc.id_fp,
+                bpc.geom,
+                fps.fp_geom,
+                bpc.delta_x,
+                bpc.delta_y,
+                bpc.delta_z,
+                bpc.z_min,
+                greatest(bpc.delta_x, bpc.delta_y, bpc.delta_z) scaling_factor,
+                st_numgeometries(geom) num_p_in_pc
+            from building_pc bpc
+            left join footprints fps on bpc.id_fp = fps.id_fp 
+            where st_numgeometries(geom) > %s
+            
+            """ % (AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD)
     )
 
     # actual fetching step
@@ -322,14 +327,17 @@ DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
 DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
 DIR_NPZ = os.path.join(DIR_ASSETS, "pointcloud_npz")
 DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
+DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_images")
 
 DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
 DB_TABLE_NAME_FOOTPRINTS = 'footprints'
 
 # Define configuration
-NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be used for cropping, use "None" to use all footprints
+AREA_OF_INTEREST_CODE = 'E06000014'
+BUILDING_BUFFER_METERS = 0.5
+NUMBER_OF_FOOTPRINTS = 1000  # define how many footprints should be used for cropping, use "None" to use all footprints
 POINT_COUNT_THRESHOLD = 1000  # define minimum points in pointcloud, smaller pointclouds are dismissed
-NUMBER_EXAMPLE_VISUALIZATIONS = 30  # define how many example 3D plots should be created
+NUMBER_EXAMPLE_VISUALIZATIONS = 100  # define how many example 3D plots should be created
 STANDARD_CRS = 27700  # define the CRS. needs to be same for footprints and lidar data
 
 # Intialize connection to database
@@ -342,21 +350,28 @@ db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
 engine = create_engine(db_connection_url, echo=False)
 
 #####################   Actual Pipeline   #####################################
-# todo: include approach which allows appending new data to database. difficulty: making sure that there are no duplicates
-# load footprint geojsons into database
-gdf_footprints = load_geojson_footprints_into_database(
-    DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTPRINTS, engine, STANDARD_CRS
-)
+# # todo: include approach which allows appending new data to database. difficulty: making sure that there are no duplicates
+
+# todo: check if should be deleted
+# # load footprint geojsons into database
+# gdf_footprints = load_geojson_footprints_into_database(
+#     DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTPRINTS, engine, STANDARD_CRS
+# )
 # adapt NUMBER_OF_FOOTPRINTS to use all footprints if None
 if NUMBER_OF_FOOTPRINTS == None:
-    NUMBER_OF_FOOTPRINTS = gdf_footprints.index.max() + 1
+    NUMBER_OF_FOOTPRINTS = 1000000000 # 1 billion, which is more than UKs building stock
+
 # Load point cloud data into database
 load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
-# Add geoindex to footprint and lidar tables
-add_geoindex_to_databases(DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_LIDAR)
+
+# todo: check if should be deleted
+# # Add geoindex to footprint and lidar tables
+# add_geoindex_to_databases(DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_LIDAR)
+
 # Fetch cropped point clouds from database
-gdf = crop_and_fetch_pointclouds_per_building(DB_TABLE_NAME_FOOTPRINTS, NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_LIDAR,
-                                              POINT_COUNT_THRESHOLD, engine)
+gdf = crop_and_fetch_pointclouds_per_building(
+    AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine)
+
 # add floor points to building pointcloud
 gdf = add_floor_points_to_points_in_gdf(gdf)
 
@@ -371,4 +386,21 @@ lidar_numpy_list = list(gdf.geom.apply(convert_multipoint_to_numpy))
 # Save building point clouds as npz
 save_lidar_numpy_list(lidar_numpy_list, gdf)
 # Visualize example data before and after normalization
-visualize_example_pointclouds(lidar_numpy_list, gdf, DIR_VISUALIZATION, NUMBER_EXAMPLE_VISUALIZATIONS)
+visualize_example_pointclouds(lidar_numpy_list, DIR_VISUALIZATION, NUMBER_EXAMPLE_VISUALIZATIONS)
+
+# todo: integrate this nicely in code
+from utils.aerial_image import get_aerial_image_lat_lon
+gdf_lat_lon = gdf.to_crs(4326)
+
+for i, building in enumerate(gdf_lat_lon.iloc):
+    cp = building.geom.centroid
+    get_aerial_image_lat_lon(
+        latitude=cp.y,
+        longitude=cp.x,
+        image_name=i,
+        horizontal_px=512,
+        vertical_px=512,
+        scale=1,
+        zoom=21,
+        save_directory=DIR_AERIAL_IMAGES
+    )
