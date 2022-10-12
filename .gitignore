@@ -3,6 +3,7 @@ __pycache__/
 config.py
 *.csv
 .DS_Store
+.env
 
 !environment.yml
 !conda-lock.yml
@@ -11,6 +12,7 @@ documentation/*
 !documentation/AOIs.md
 !documentation/TODOs.md
 !documentation/DB_SETUP.md
+!documentation/DB_CONTAINER_SETUP.md
 
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
@@ -18,15 +20,16 @@ experimentation/*
 
 archive/*
 
+assets/images/*
+!assets/images/example.png
+!assets/images/Terminal.png
+
 assets/*
 !assets/coventry_building_footprints.geojson
 !assets/cropped_16.las
 !assets/cropped_24.las
 !assets/cropped_31.las
 !assets/cropped_41.las
-
-assets/images/*
-!assets/images/example.png
 
 venv/*
 
