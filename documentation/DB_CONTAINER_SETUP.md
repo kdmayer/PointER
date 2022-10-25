@@ -113,17 +113,24 @@ For now, the database setup is complete. We will populate our pointcloud databas
 #### Project 
 We connect to the singularity container shell with 
 
-        singularity shell cs224w.sif
+    singularity shell cs224w.sif
 
 Then, we set up our project with
 
     git clone https://github.com/kdmayer/CS224W_LIDAR.git
 
 During the "git clone" step, you will need to provide your GitHub username and your access token.
+    
+To connect to the database with our python code, we define the database credentials in the config.py file. 
+Based on the config_template.py, we adapt the connection parameters. 
+Furthermore, we can specify a Google Maps API key, in case we want to download Google aerial images. 
+Then we rename the file to config.py 
+
+    cd CS224W_LIDAR && / 
+    mv config_template.py config.py 
 
 Then, we continue the set-up of the container with
 
-    cd CS224W_LIDAR && \
     pip install conda-lock
 
 #### Python environment
