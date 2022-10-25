@@ -121,16 +121,16 @@ Then, we set up our project with
 
 During the "git clone" step, you will need to provide your GitHub username and your access token.
 
-Then, we continue the set up of the container with
+Then, we continue the set-up of the container with
 
     cd CS224W_LIDAR && \
     pip install conda-lock
 
+#### Python environment
 Make sure to add '/home/vagrant/.local/bin' to your $PATH, possibly to your .bashrc
 
     export PATH=$PATH:/home/vagrant/.local/bin
 
-#### Python environment
 We install our conda environment and verify installation
     
     conda-lock install -n cs224w && \
