@@ -52,6 +52,29 @@ Afterwards, spin up the virtual machine with
     vagrant up && \
     vagrant ssh
 
+
+### Increase partition size for vagrant
+Even though we specified the disk size in the Vagrantfile to 150GB, we require some further steps to liberate this space.
+Steps are based on: https://nguyenhoa93.github.io/Increase-VM-Partition/
+
+In the VM, we check the disk size with
+
+    df -h
+
+We need to increase the limited disk size of /dev/mapper/vagrant--vg-root (~19GB). First, we 
+
+    sudo cfdisk /dev/sda
+
+and use arrows to select sda1, then [Resize], specify space to 150GB, then [Write] and [Quit]. 
+Next, we resize the physical volume
+
+    sudo pvresize /dev/sda1
+
+Then we expand the virtual volume
+
+    sudo lvextend -r -l +100%FREE /dev/mapper/vagrant--vg-root
+
+
 ### Singularity Setup including pgpointcloud, conda, python environment and project folder
 #### Pgpointcloud container with conda 
 In the VM, create an empty container definition file
@@ -88,6 +111,10 @@ Then, we can connect to the intial postgres database to check if the setup was s
 For now, the database setup is complete. We will populate our pointcloud database with data later
 
 #### Project 
+We connect to the singularity container shell with 
+
+        singularity shell cs224w.sif
+
 Then, we set up our project with
 
     git clone https://github.com/kdmayer/CS224W_LIDAR.git
@@ -114,9 +141,61 @@ In the shell, we run
     source /usr/local/etc/profile.d/conda.sh && \
     conda activate cs224w
 
-Please note that both commands are needed whenever we connect to the shell of the .sif container with
+Please note that specifying the path to conda.sh is needed whenever we connect to the shell of the .sif container with
 
     singularity shell cs224w.sif
+
+
+### Add data to database: footprints, unique property reference numbers, and local authority boundary
+#### Data sources
+  - Building footprints:
+    - We use verisk UKBuildings database (.gpkg): https://www.verisk.com/en-gb/3d-visual-intelligence/products/ukbuildings/
+    - Alternatively, we can use OSM data
+  - Local Authority Distric Boundaries (.shp): https://geoportal.statistics.gov.uk/
+  - Unique Property Reference Numbers (UPRN) coordinates (.gpkg): https://www.ordnancesurvey.co.uk/business-government/products/open-uprn
+  - pointcloud data (.laz): UK National LiDAR Programme: https://www.data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme
+
+First, we need to make the data accessible to the VM. 
+A simple way to copy-paste our data in the "share folder" we defined in the Vagrantfile.
+
+Then, we move the data to the VM's home folder, so the singularity container can access them 
+(not all of the VM's directories are accessible from within singularity):
+
+    mv /home/vagrant/data_share/uprn.gpkg CS224W_LIDAR/assets/uprn/uprn.gpkg 
+    mv /home/vagrant/data_share/UKBuildings_Edition_13_online.gpkg.gpkg CS224W_LIDAR/assets/footprints/UKBuildings_Edition_13_online.gpkg.gpkg
+    mv /home/vagrant/data_share/local_authority_boundaries /local_authority_boundaries
+
+Connect to singularity shell:
+
+    singularity shell -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif 
+
+To insert geopackage data into the database, we need GDALs ogr2ogr function. Therefor we activate the conda environment:
+
+    source /usr/local/etc/profile.d/conda.sh && \
+    conda activate cs224w
+
+Using the conda GDAL installation, we insert the geopackage and shp data into our cs224w_db database. 
+The data is some GBs and this process can take 15+ minutes.
+
+Make sure, you are in home directory
+    
+    cd
+
+then:
+
+    ogr2ogr -nln uprn -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
+    -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
+    CS224W_LIDAR/assets/uprn/uprn.gpkg
+    
+    ogr2ogr -nln footprints_verisk -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
+    -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
+    CS224W_LIDAR/assets/footprints/UKBuildings_Edition_13_online.gpkg
+    
+    ogr2ogr -nln local_authority_boundaries -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
+    -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
+    CS224W_LIDAR/assets/local_authority_boundaries/LAD_DEC_2021_GB_BFC.shp
+
+See here for a description of input parameters: https://postgis.net/workshops/postgis-intro/loading_data.html
 
 
 ### Connect PyCharm Interpreter with Singularity Container:
