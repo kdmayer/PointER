@@ -327,7 +327,7 @@ DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
 DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
 DIR_NPZ = os.path.join(DIR_ASSETS, "pointcloud_npz")
 DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
-DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_images")
+DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
 
 DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
 DB_TABLE_NAME_FOOTPRINTS = 'footprints'

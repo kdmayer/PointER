@@ -13,7 +13,7 @@ def get_aerial_image_lat_lon(latitude: float,
                              vertical_px: int = 512,
                              scale: int = 1,
                              zoom: int = 20,
-                             save_directory: str = "aerial_images"):
+                             save_directory: str = "aerial_image_examples"):
     """
     Retrieves an aerial image from bing maps centered at a given latitude
     and longitude and saves it as .png.

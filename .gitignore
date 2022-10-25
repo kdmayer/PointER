@@ -17,6 +17,7 @@ documentation/*
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
 !experimentation/Merge_footprint_and_LiDAR_points.ipynb
+!pgpointcloud_main.py
 
 archive/*
 
@@ -31,13 +32,11 @@ assets/*
 !assets/cropped_31.las
 !assets/cropped_41.las
 
+assets/aerial_image_examples/*
+assets/example_pointclouds/*
 assets/footprints/*
 assets/local_authority_boundaries/*
 assets/uk_lidar_data/*
 assets/uprn/*
-
-outputs/aerial_images/*
-outputs/example_pointclouds/*
-outputs/pointcloud_npz/*
 
 venv/*
