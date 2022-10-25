@@ -31,5 +31,13 @@ assets/*
 !assets/cropped_31.las
 !assets/cropped_41.las
 
-venv/*
+assets/footprints/*
+assets/local_authority_boundaries/*
+assets/uk_lidar_data/*
+assets/uprn/*
 
+outputs/aerial_images/*
+outputs/example_pointclouds/*
+outputs/pointcloud_npz/*
+
+venv/*
