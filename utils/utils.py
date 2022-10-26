@@ -1,3 +1,5 @@
+import os.path
+
 from geoalchemy2 import WKBElement
 from geoalchemy2.shape import to_shape
 from shapely.geometry import box
@@ -7,6 +9,17 @@ import numpy as np
 
 import laspy
 import shapely
+
+
+def check_directory_paths(dir_path_list):
+    path_check = True
+    for path in dir_path_list:
+        if os.path.isdir(path):
+            print("directory '%s' exists" %(str(path)))
+        else:
+            print("directory '%s' does NOT exist" %(str(path)))
+            path_check = False
+    return print("all paths exist: " + str(path_check))
 
 
 def _convert_numpy_to_las(x: np.ndarray = None, header=None):
@@ -53,6 +66,7 @@ def gdf_fp_geometries_wkb_to_shape(gdf: gpd.GeoDataFrame = None):
     # replace fp_geom column with shapes
     gdf['fp_geom'] = gdf_fp_geoms
     return gdf
+
 
 def _sample_random_points(x: np.ndarray = None, random_sample_size: int = None):
     rng = np.random.default_rng()

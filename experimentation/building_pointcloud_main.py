@@ -16,7 +16,7 @@ from utils.visualization import visualize_example_pointclouds
 # Define project base directory and paths
 DIR_BASE = os.getcwd()
 DIR_ASSETS = os.path.join(os.path.dirname(DIR_BASE), 'assets')
-assert DIR_ASSETS.split("\\")[-1] == 'assets', \
+assert os.path.isdir(DIR_ASSETS) and DIR_ASSETS[-6:] == 'assets', \
     "You are not in the assets directory"
 
 DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
