@@ -60,7 +60,7 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     print('Loading pointcloud data from las to database. This process can take several minutes')
     # unzip LAZ files, if corresponding LAS file does not exist
     for i, unpacked_file in enumerate(unpacked_files):
-        print('unpacking laz file %s of %s: %s' % (str(i+1), str(len(unpacked_files)), unpacked_file))
+        print('unpacking laz file %s of %s: %s' % (str(i + 1), str(len(unpacked_files)), unpacked_file))
         # unzip laz to las
         in_laz = os.path.join(DIR_LAS_FILES, unpacked_file)
         out_las = os.path.join(DIR_LAS_FILES, unpacked_file[:-4] + '.las')
@@ -95,7 +95,7 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
             ]
         }
 
-        print('loading laz file %s of %s into database' % (str(i+1), str(len(unpacked_files))))
+        print('loading laz file %s of %s into database' % (str(i + 1), str(len(unpacked_files))))
         pipeline = pdal.Pipeline(json.dumps(las_to_db_pipeline))
         pipeline.execute()
 
@@ -104,57 +104,52 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     return
 
 
-def add_geoindex_to_databases(db_connection_url: str, DB_TABLE_NAME_FOOTRPINTS: str, DB_TABLE_NAME_LIDAR: str):
-    # Add geoindex to footprint and lidar tables
-    # We use psycopg2 for the sql query, because the VACUUM function did not work
-    # with sqlalchemy (transaction block error)
+def add_geoindex_to_databases(db_connection_url: str, db_table_name_list: list, db_is_pointcloud_table_list: list):
+    # Add geoindex to tables while treating lidar tables differently than 2D geom tables
+    # Use psycopg2 for the sql query, because the VACUUM function does not work with sqlalchemy
+    # (transaction block error)
 
-    # define sql queries
-    sql_query_geoindex_footprints = (
-            "CREATE INDEX geoid ON %s USING GIST (geometry);"
-            % DB_TABLE_NAME_FOOTRPINTS
-    )
-    sql_query_geoindex_footprints_vacuum = (
-            "VACUUM ANALYZE %s (geometry)" % DB_TABLE_NAME_FOOTRPINTS
-    )
-    sql_query_geoindex_pointclouds = (
-            "CREATE INDEX geoid_pa on %s using GIST (Geometry(pa));"
-            % DB_TABLE_NAME_LIDAR
-    )
-    sql_query_geoindex_pointclouds_vacuum = (
-            "VACUUM ANALYZE %s (pa)" % DB_TABLE_NAME_LIDAR
-    )
-    sql_query_check_geoid_pa_lidar = (
-            "SELECT indexname = 'geoid_pa' FROM pg_indexes WHERE tablename = '%s'"
-            % DB_TABLE_NAME_LIDAR
-    )
+    for i, table_name in enumerate(db_table_name_list):
+        # define sql queries
+        idx_name = ('idx_gist_%s' % table_name)
+        sql_query_check_geoidx = (
+                "SELECT indexname = '%s' FROM pg_indexes WHERE tablename = '%s'"
+                % (idx_name, table_name)
+        )
+        if db_is_pointcloud_table_list[i] == 0:
+            # indexing and vacuum query differ slightly for pointcloud db
+            sql_query_geoindex = (
+                    "CREATE INDEX %s ON %s USING GIST (geometry);" % (idx_name, table_name)
+            )
+            sql_query_vacuum = (
+                    "VACUUM ANALYZE %s (geometry)" % table_name
+            )
+        elif db_is_pointcloud_table_list[i] == 1:
+            sql_query_geoindex = (
+                    "CREATE INDEX %s on %s using GIST (Geometry(pa));" % (idx_name, table_name)
+            )
+            sql_query_vacuum = (
+                    "VACUUM ANALYZE %s (pa)" % table_name
+            )
 
-    # create connection and cursor
-    connection_psycopg2 = psycopg2.connect(db_connection_url)
-    connection_psycopg2.autocommit = True
-    cursor = connection_psycopg2.cursor()
-
-    # execute geoindexing footprints
-    cursor.execute(sql_query_geoindex_footprints)
-    # execute vacuuming footprints (used to improve geoindex)
-    cursor.execute(sql_query_geoindex_footprints_vacuum)
-
-    # check if lidar table already contains geo index
-    cursor.execute(sql_query_check_geoid_pa_lidar)
-    geoindex_exists = np.array(cursor.fetchall()).any()
-
-    # add geoindex to lidar table, only if data was added, otherwise, geoindex already exists
-    if not geoindex_exists:
-        # execute geoindexing lidar
-        cursor.execute(sql_query_geoindex_pointclouds)
-        # execute vacuuming lidar (used to improve geoindex)
-        cursor.execute(sql_query_geoindex_pointclouds_vacuum)
-
-    # commit the transaction
-    connection_psycopg2.commit()
-    # close the database communication
-    connection_psycopg2.close()
-
+        # create connection and cursor
+        connection_psycopg2 = psycopg2.connect(db_connection_url)
+        connection_psycopg2.autocommit = True
+        cursor = connection_psycopg2.cursor()
+        # check if lidar table already contains geo index
+        cursor.execute(sql_query_check_geoidx)
+        geoindex_exists = np.array(cursor.fetchall()).any()
+        # add geoindex only if indext does not yet exist
+        if not geoindex_exists:
+            print('Creating geoindex on table %s. This process can take several minuts' % table_name)
+            # execute geoindexing
+            cursor.execute(sql_query_geoindex)
+        # execute vacuuming (used to improve geoindex)
+        cursor.execute(sql_query_vacuum)
+        # commit the transaction
+        connection_psycopg2.commit()
+        # close the database communication
+        connection_psycopg2.close()
     return
 
 
@@ -244,11 +239,13 @@ def add_floor_points_to_points_in_gdf(gdf):
         new_pointcloud = add_floor_points_to_pointcloud(row.fp_geom, row.geom, row.z_min)
         pointcloud_with_floor_list.append(new_pointcloud)
         if i % 100 == 0:
-            print('processing pointcloud %s out of %s' %(i, len(gdf)))
+            print('processing pointcloud %s out of %s' % (i, len(gdf)))
     gdf = gdf.assign(geom=pointcloud_with_floor_list)
     return gdf
 
-def add_floor_points_to_pointcloud(building_footprint: shapely.geometry.Polygon, pointcloud: shapely.geometry.MultiPoint,
+
+def add_floor_points_to_pointcloud(building_footprint: shapely.geometry.Polygon,
+                                   pointcloud: shapely.geometry.MultiPoint,
                                    z_min):
     # Grid spacing in meters
     resolution = 0.5
