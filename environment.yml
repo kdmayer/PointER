@@ -9,6 +9,7 @@ dependencies:
   - pdal=2.4.2
   - python-pdal=3.1.2
   - laspy==2.2.0
+  - laszip
   - pip
   - jupyter=1.0.0
   - plotly=5.10.0
