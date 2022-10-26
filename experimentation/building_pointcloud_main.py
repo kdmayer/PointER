@@ -13,9 +13,6 @@ from utils.utils import convert_multipoint_to_numpy
 from utils.visualization import visualize_example_pointclouds
 
 ######################   Configurations   #####################################
-# use timer to get feeling for duration of program parts
-start_time = time.perf_counter()
-
 # Define project base directory and paths
 DIR_BASE = os.getcwd()
 DIR_ASSETS = os.path.join(os.path.dirname(DIR_BASE), 'assets')
@@ -34,18 +31,13 @@ DB_TABLE_NAME_FOOTPRINTS = 'footprints'
 # Define configuration
 AREA_OF_INTEREST_CODE = 'E06000014'
 BUILDING_BUFFER_METERS = 0.5
-NUMBER_OF_FOOTPRINTS = 1000  # define how many footprints should be used for cropping, use "None" to use all footprints
+MAX_NUMBER_OF_FOOTPRINTS = 1000  # define how many footprints should be used for cropping, use "None" to use all footprints
 POINT_COUNT_THRESHOLD = 1000  # define minimum points in pointcloud, smaller pointclouds are dismissed
 NUMBER_EXAMPLE_VISUALIZATIONS = 100  # define how many example 3D plots should be created
 STANDARD_CRS = 27700  # define the CRS. needs to be same for footprints and lidar data
 
 # Intialize connection to database
-db_connection_url = 'postgresql://' + config.POSTGRES_USER + ':' \
-                    + config.POSTGRES_PASSWORD + '@' \
-                    + config.POSTGRES_HOST + ':' \
-                    + config.POSTGRES_PORT + '/' \
-                    + config.POSTGRES_DATABASE
-
+db_connection_url = config.DATABASE_URL
 engine = create_engine(db_connection_url, echo=False)
 
 #####################   Actual Pipeline   #####################################
@@ -56,9 +48,6 @@ engine = create_engine(db_connection_url, echo=False)
 # gdf_footprints = load_geojson_footprints_into_database(
 #     DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTPRINTS, engine, STANDARD_CRS
 # )
-# adapt NUMBER_OF_FOOTPRINTS to use all footprints if None
-if NUMBER_OF_FOOTPRINTS == None:
-    NUMBER_OF_FOOTPRINTS = 1000000000  # 1 billion, which is more than UKs building stock
 
 # Load point cloud data into database
 load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
@@ -67,9 +56,13 @@ load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 # # Add geoindex to footprint and lidar tables
 # add_geoindex_to_databases(DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_LIDAR)
 
+# adapt NUMBER_OF_FOOTPRINTS to use all footprints if None
+if MAX_NUMBER_OF_FOOTPRINTS == None:
+    MAX_NUMBER_OF_FOOTPRINTS = 1000000000  # 1 billion, which is more than UKs building stock
+
 # Fetch cropped point clouds from database
 gdf = crop_and_fetch_pointclouds_per_building(
-    AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine)
+    AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, MAX_NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine)
 
 # add floor points to building pointcloud
 gdf = add_floor_points_to_points_in_gdf(gdf)

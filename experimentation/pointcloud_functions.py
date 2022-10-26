@@ -68,7 +68,6 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
         las = laspy.convert(las)
         las.write(out_las)
 
-
         # load las files into database
         las_to_db_pipeline = {
             "pipeline": [
