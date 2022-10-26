@@ -9,25 +9,10 @@ from pointcloud_functions import \
     add_floor_points_to_points_in_gdf, \
     crop_and_fetch_pointclouds_per_building, \
     save_lidar_numpy_list
-from utils.utils import convert_multipoint_to_numpy
+from utils.utils import convert_multipoint_to_numpy, check_directory_paths
 from utils.visualization import visualize_example_pointclouds
 
 ######################   Configurations   #####################################
-# Define project base directory and paths
-DIR_BASE = os.getcwd()
-DIR_ASSETS = os.path.join(os.path.dirname(DIR_BASE), 'assets')
-assert os.path.isdir(DIR_ASSETS) and DIR_ASSETS[-6:] == 'assets', \
-    "You are not in the assets directory"
-
-DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
-DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
-DIR_NPZ = os.path.join(DIR_ASSETS, "pointcloud_npz")
-DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
-DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
-
-DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
-DB_TABLE_NAME_FOOTPRINTS = 'footprints'
-
 # Define configuration
 AREA_OF_INTEREST_CODE = 'E06000014'
 BUILDING_BUFFER_METERS = 0.5
@@ -35,6 +20,25 @@ MAX_NUMBER_OF_FOOTPRINTS = 1000  # define how many footprints should be used for
 POINT_COUNT_THRESHOLD = 1000  # define minimum points in pointcloud, smaller pointclouds are dismissed
 NUMBER_EXAMPLE_VISUALIZATIONS = 100  # define how many example 3D plots should be created
 STANDARD_CRS = 27700  # define the CRS. needs to be same for footprints and lidar data
+
+# Define project base directory and paths
+DIR_BASE = os.getcwd()
+DIR_ASSETS = os.path.join(os.path.dirname(DIR_BASE), 'assets')
+DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
+DIR_BUILDING_FOOTPRINTS = os.path.join(DIR_ASSETS, "aoi")
+DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
+DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
+DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
+DIR_NPY = os.path.join(DIR_ASSETS, "pointcloud_npy")
+
+# check that all required directories exist
+check_directory_paths([DIR_ASSETS, DIR_OUTPUTS, DIR_BUILDING_FOOTPRINTS, DIR_LAZ_FILES, \
+                       DIR_NPY, DIR_VISUALIZATION, DIR_AERIAL_IMAGES])
+
+DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
+DB_TABLE_NAME_FOOTPRINTS = 'footprints_verisk'
+DB_TABLE_NAME_UPRN = 'uprn'
+DB_TABLE_NAME_AREA_OF_INTEREST = 'local_authority_boundaries'
 
 # Intialize connection to database
 db_connection_url = config.DATABASE_URL
@@ -67,7 +71,7 @@ gdf = crop_and_fetch_pointclouds_per_building(
 # add floor points to building pointcloud
 gdf = add_floor_points_to_points_in_gdf(gdf)
 
-# todo: select raw or scaled lidar to npz
+# todo: select raw or scaled lidar to npy
 # # Determine scaling factor (max delta_x/delta_y/delta_z of all points)
 # scaling_factor = get_scaling_factor(gdf)
 # # Convert fetched building point clouds to numpy
@@ -75,7 +79,7 @@ gdf = add_floor_points_to_points_in_gdf(gdf)
 
 # Save raw pointcloud without threshhold or scaling
 lidar_numpy_list = list(gdf.geom.apply(convert_multipoint_to_numpy))
-# Save building point clouds as npz
+# Save building point clouds as npy
 save_lidar_numpy_list(lidar_numpy_list, gdf)
 # Visualize example data before and after normalization
 visualize_example_pointclouds(lidar_numpy_list, DIR_VISUALIZATION, NUMBER_EXAMPLE_VISUALIZATIONS)
