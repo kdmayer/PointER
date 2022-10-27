@@ -182,7 +182,7 @@ def crop_and_fetch_pointclouds_per_building(
                 where lab.lad21cd = \'%s\' 
             ),
             footprints as (
-                select st_buffer(fps.geom, %s) fp_geom, fps.id id_fp
+                select st_buffer(fps.geom, %s) fp_geom, fps.gid id_fp
                 from footprints_verisk fps, area_of_interest
                 where st_intersects(fps.geom, area_of_interest.geom)
                 limit %s

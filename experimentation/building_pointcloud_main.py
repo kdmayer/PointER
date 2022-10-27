@@ -11,6 +11,7 @@ from pointcloud_functions import \
     save_lidar_numpy_list
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths
 from utils.visualization import visualize_single_3d_point_cloud
+from utils.aerial_image import get_aerial_image_lat_lon
 
 ######################   Configurations   #####################################
 # Define configuration
@@ -94,20 +95,18 @@ for i, lidar_pc in enumerate(lidar_numpy_list):
             show=False
         )
 
-# todo: integrate this nicely in code
-from utils.aerial_image import get_aerial_image_lat_lon
-
+# Visualize example aerial images
 gdf_lat_lon = gdf.to_crs(4326)
 
 for i, building in enumerate(gdf_lat_lon.iloc):
-    pce_file_name = str(gdf.iloc[i].fp_geom.centroid.x) + "_" + \
+    ai_file_name = str(gdf.iloc[i].fp_geom.centroid.x) + "_" + \
                     str(gdf.iloc[i].fp_geom.centroid.y) + ".png"
     if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
         cp = building.geom.centroid
         get_aerial_image_lat_lon(
             latitude=cp.y,
             longitude=cp.x,
-            image_name=pce_file_name,
+            image_name=ai_file_name,
             horizontal_px=512,
             vertical_px=512,
             scale=1,
