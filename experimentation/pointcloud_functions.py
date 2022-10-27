@@ -119,10 +119,10 @@ def add_geoindex_to_databases(db_connection_url: str, db_table_name_list: list, 
         if db_is_pointcloud_table_list[i] == 0:
             # indexing and vacuum query differ slightly for pointcloud db
             sql_query_geoindex = (
-                    "CREATE INDEX %s ON %s USING GIST (geometry);" % (idx_name, table_name)
+                    "CREATE INDEX %s ON %s USING GIST (geom);" % (idx_name, table_name)
             )
             sql_query_vacuum = (
-                    "VACUUM ANALYZE %s (geometry)" % table_name
+                    "VACUUM ANALYZE %s (geom)" % table_name
             )
         elif db_is_pointcloud_table_list[i] == 1:
             sql_query_geoindex = (
