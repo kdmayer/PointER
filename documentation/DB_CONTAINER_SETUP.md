@@ -108,6 +108,20 @@ Then, we can connect to the intial postgres database to check if the setup was s
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d postgres
 
+To conclude, using the postgres shell, we create a new database
+    
+    CREATE DATABASE cs224w_db;
+
+Since it is a new database, we need to add the pointcloud and postgis extensions
+    
+    CREATE EXTENSION postgis;
+	CREATE EXTENSION pointcloud;
+	CREATE EXTENSION pointcloud_postgis;
+    
+Disconnect from postgres
+
+    \q
+
 For now, the database setup is complete. We will populate our pointcloud database with data later
 
 #### Project 
@@ -251,3 +265,6 @@ From the vm-singularity folder, execute
 
 Incomplete and Docker do not run on Sherlock
 
+If you want to save a table or materialized view as gpkg or shp, you can use:
+
+    ogr2ogr -f "GPKG" mynewfilename.gpkg PG:"host=localhost user=vagrant dbname=cs224w_db password=mypassword" "mytablename"
