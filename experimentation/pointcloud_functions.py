@@ -111,7 +111,7 @@ def add_geoindex_to_databases(db_connection_url: str, db_table_name_list: list, 
 
     for i, table_name in enumerate(db_table_name_list):
         # define sql queries
-        idx_name = ('idx_gist_%s' % table_name)
+        idx_name = ('%s_geom_geom_idx' % table_name)
         sql_query_check_geoidx = (
                 "SELECT indexname = '%s' FROM pg_indexes WHERE tablename = '%s'"
                 % (idx_name, table_name)
