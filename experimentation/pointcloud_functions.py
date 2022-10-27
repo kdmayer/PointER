@@ -295,8 +295,8 @@ def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
 def save_lidar_numpy_list(lidar_numpy_list, gdf, dir_npy):
     # IMPORTANT: lidar_numpy_list order must be the same as gdf to ensure correct naming of .npy
     for i, lidar_pc in enumerate(lidar_numpy_list):
-        npy_file_name = str(int(gdf.iloc[i].fp_geom.centroid.x)) + "_" + \
-                        str(int(gdf.iloc[i].fp_geom.centroid.y)) + ".npy"
+        npy_file_name = str(gdf.iloc[i].fp_geom.centroid.x) + "_" + \
+                        str(gdf.iloc[i].fp_geom.centroid.y) + ".npy"
         npy_file_path = os.path.join(dir_npy, npy_file_name)
         with open(npy_file_path, 'wb') as f:
             np.save(f, arr=lidar_pc)

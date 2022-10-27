@@ -29,7 +29,6 @@ def get_aerial_image_lat_lon(latitude: float,
     maps_url = "https://maps.googleapis.com/maps/api/staticmap"
     image_url = f"{maps_url}?{params}"
     image_file = io.BytesIO(urllib.request.urlopen(image_url).read())
-    image_name = str(image_name) + '.png'
 
     path = os.path.join(save_directory, image_name)
     with open(path, "wb") as file:

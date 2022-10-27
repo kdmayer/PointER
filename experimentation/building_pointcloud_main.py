@@ -10,7 +10,7 @@ from pointcloud_functions import \
     crop_and_fetch_pointclouds_per_building, \
     save_lidar_numpy_list
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths
-from utils.visualization import visualize_example_pointclouds
+from utils.visualization import visualize_single_3d_point_cloud
 
 ######################   Configurations   #####################################
 # Define configuration
@@ -82,7 +82,17 @@ lidar_numpy_list = list(gdf.geom.apply(convert_multipoint_to_numpy))
 # Save building point clouds as npy
 save_lidar_numpy_list(lidar_numpy_list, gdf)
 # Visualize example data before and after normalization
-visualize_example_pointclouds(lidar_numpy_list, DIR_VISUALIZATION, NUMBER_EXAMPLE_VISUALIZATIONS)
+for i, lidar_pc in enumerate(lidar_numpy_list):
+    if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
+        pce_file_name = str(gdf.iloc[i].fp_geom.centroid.x) + "_" + \
+                        str(gdf.iloc[i].fp_geom.centroid.y) + ".html"
+        save_path = os.path.join(DIR_VISUALIZATION, pce_file_name)
+        visualize_single_3d_point_cloud(
+            lidar_pc,
+            title=str(i),
+            save_path=save_path,
+            show=False
+        )
 
 # todo: integrate this nicely in code
 from utils.aerial_image import get_aerial_image_lat_lon
@@ -90,14 +100,17 @@ from utils.aerial_image import get_aerial_image_lat_lon
 gdf_lat_lon = gdf.to_crs(4326)
 
 for i, building in enumerate(gdf_lat_lon.iloc):
-    cp = building.geom.centroid
-    get_aerial_image_lat_lon(
-        latitude=cp.y,
-        longitude=cp.x,
-        image_name=i,
-        horizontal_px=512,
-        vertical_px=512,
-        scale=1,
-        zoom=21,
-        save_directory=DIR_AERIAL_IMAGES
-    )
+    pce_file_name = str(gdf.iloc[i].fp_geom.centroid.x) + "_" + \
+                    str(gdf.iloc[i].fp_geom.centroid.y) + ".png"
+    if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
+        cp = building.geom.centroid
+        get_aerial_image_lat_lon(
+            latitude=cp.y,
+            longitude=cp.x,
+            image_name=pce_file_name,
+            horizontal_px=512,
+            vertical_px=512,
+            scale=1,
+            zoom=21,
+            save_directory=DIR_AERIAL_IMAGES
+        )

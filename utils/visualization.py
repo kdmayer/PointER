@@ -21,7 +21,7 @@ def visualize_3d_array(point_cloud_array: np.ndarray = None, file_name_list: Lis
     return
 
 
-def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title: str = 'title', save_dir: str = None,
+def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title: str = 'title', save_path: str = None,
                                     show: bool = False):
     x = point_cloud_array[:, 0].flatten()
     y = point_cloud_array[:, 1].flatten()
@@ -35,9 +35,7 @@ def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title:
     if show:
         fig.show()
 
-    if save_dir != None:
-        save_path = os.path.join(save_dir, title + '.html')
-        fig.write_html(save_path)
+    fig.write_html(save_path)
     return
 
 
