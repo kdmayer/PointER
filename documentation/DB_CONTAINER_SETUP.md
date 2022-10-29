@@ -31,10 +31,6 @@ to
 
     config.vm.network "forwarded_port", guest: 8888, host: 8888
 
-Furthermore, we add the following line to enable working with postgres  
-
-    config.vm.network "forwarded_port", guest: 5454, host: 5454, host_ip: "127.0.0.1"
-
 
 In order to share a folder from our host computer to the VM, we can specify the shared folder as
 
@@ -102,6 +98,7 @@ The folder are used by the pointcloud container to write required setup/configur
 Then, we execute the database initialization. By binding both directories, we enable postgres to write on the VM.
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif initdb
+
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif pg_ctl -D /var/lib/postgresql/data -l logfile start
 
 Then, we can connect to the intial postgres database to check if the setup was successful
@@ -112,13 +109,21 @@ To conclude, using the postgres shell, we create a new database
     
     CREATE DATABASE cs224w_db;
 
+and quit the postgres database:
+
+    \q
+
+to connect to our new cs224w_db base
+    
+    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
+
 Since it is a new database, we need to add the pointcloud and postgis extensions
     
     CREATE EXTENSION postgis;
 	CREATE EXTENSION pointcloud;
 	CREATE EXTENSION pointcloud_postgis;
     
-Disconnect from postgres
+Disconnect from database
 
     \q
 
@@ -162,24 +167,30 @@ In the shell, we run
     source /usr/local/etc/profile.d/conda.sh && \
     conda activate cs224w
 
-Please note that specifying the path to conda.sh is needed whenever we connect to the shell of the .sif container with
+Please note that specifying the path to conda.sh is needed when we want to activate conda in the singularity shell 
 
-    singularity shell cs224w.sif
+We manually install laspy with pip to make sure, laspy uses laszip, required for reading and writing LAZ files.
+While our conda environment is active:
 
+    pip install laspy[laszip]
 
 ### Add data to database: footprints, unique property reference numbers, and local authority boundary
 #### Data sources
   - Building footprints:
     - We use verisk UKBuildings database (.gpkg): https://www.verisk.com/en-gb/3d-visual-intelligence/products/ukbuildings/
     - Alternatively, we can use OSM data
+    - License for personal use only
   - Local Authority Distric Boundaries (.shp): https://geoportal.statistics.gov.uk/
+    - Open Government Licencse
   - Unique Property Reference Numbers (UPRN) coordinates (.gpkg): https://www.ordnancesurvey.co.uk/business-government/products/open-uprn
+    - Open Government Licencse
   - pointcloud data (.laz): UK National LiDAR Programme: https://www.data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme
+    - Open Government Licencse
 
 First, we need to make the data accessible to the VM. 
 A simple way to copy-paste our data in the "share folder" we defined in the Vagrantfile.
 
-Then, we move the data to the VM's home folder, so the singularity container can access them 
+Then, we move the data to project folder, so the singularity container can access them 
 (not all of the VM's directories are accessible from within singularity):
 
     mv /home/vagrant/data_share/uprn.gpkg CS224W_LIDAR/assets/uprn/uprn.gpkg 
@@ -207,7 +218,7 @@ then:
     ogr2ogr -nln uprn -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
     CS224W_LIDAR/assets/uprn/uprn.gpkg
-    
+        
     ogr2ogr -nln footprints_verisk -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
     CS224W_LIDAR/assets/footprints/UKBuildings_Edition_13_online.gpkg
