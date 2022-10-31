@@ -178,11 +178,9 @@ def crop_and_fetch_pointclouds_per_building(
             """
             -- select area of interest boundary 
             with area_of_interest as (
-                select st_envelope(st_union(st_setsrid(PC_EnvelopeGeometry(pa), 27700))) geom
-                from uk_lidar_data
-                -- select st_transform(geom, 27700) geom
-                -- from local_authority_boundaries lab
-                -- where lab.lad21cd = %s
+                select st_transform(geom, 27700) geom
+                from local_authority_boundaries lab
+                where lab.lad21cd = %s
             ),
             footprints as (
                 select fps.geom geom_fp, fps.gid id_fp
@@ -200,10 +198,15 @@ def crop_and_fetch_pointclouds_per_building(
                 left join uprn_york u 
                 on st_intersects(fps.geom_fp, u.geom)
             ),
+            epc as (
+                select *
+                from epc e
+                where "LOCAL_AUTHORITY" = %s
+            ),
             fp_uprn_epc as (
                 select row_number() over (order by fpu.id_fp) as id_uprn_epc, *
                 from fp_uprn fpu
-                left join epc_york e
+                left join epc e
                 on fpu.uprn=e."UPRN" 
             ),
             patch_unions as (
@@ -265,7 +268,8 @@ def crop_and_fetch_pointclouds_per_building(
             select distinct *
             from building_pc_fp_epc
             
-            """ % (AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS, POINT_COUNT_THRESHOLD)
+            """ % (AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS,
+                   AREA_OF_INTEREST_CODE, POINT_COUNT_THRESHOLD)
     )
 
     # actual fetching step
