@@ -180,7 +180,7 @@ def crop_and_fetch_pointclouds_per_building(
             with area_of_interest as (
                 select st_transform(geom, 27700) geom
                 from local_authority_boundaries lab
-                where lab.lad21cd = %s
+                where lab.lad21cd = "%s"
             ),
             footprints as (
                 select fps.geom geom_fp, fps.gid id_fp
@@ -201,7 +201,7 @@ def crop_and_fetch_pointclouds_per_building(
             epc as (
                 select *
                 from epc e
-                where "LOCAL_AUTHORITY" = %s
+                where "LOCAL_AUTHORITY" = "%s"
             ),
             fp_uprn_epc as (
                 select row_number() over (order by fpu.id_fp) as id_uprn_epc, *
