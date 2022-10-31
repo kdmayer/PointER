@@ -12,7 +12,7 @@ from geoalchemy2 import Geometry
 
 import config as config
 
-from utils.utils import normalize_geom, gdf_fp_geometries_wkb_to_shape
+from utils.utils import normalize_geom, gdf_geometries_wkb_to_shape
 
 
 def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS):
@@ -168,7 +168,7 @@ def crop_and_fetch_pointclouds_per_building(
     #   - ogc_fid: id of entry in footprint database (1 ... n)
     #   - geom: multipoint of pointcloud cropped by building footprint outline
     #   - num_p_in_pc: number of points in pointcloud
-    #   - fp_geom: footprint polygon
+    #   - geom_fp: footprint polygon
     #   - osm_id: OSM id of footprint, prefix is way/ or /relation
 
     # query is dynamically adapted by the number of requested footprints (num_footprints) as well as the sample size
@@ -180,7 +180,7 @@ def crop_and_fetch_pointclouds_per_building(
             with area_of_interest as (
                 select st_transform(geom, 27700) geom
                 from local_authority_boundaries lab
-                where lab.lad21cd = "%s"
+                where lab.lad21cd = '%s'
             ),
             footprints as (
                 select fps.geom geom_fp, fps.gid id_fp
@@ -195,13 +195,13 @@ def crop_and_fetch_pointclouds_per_building(
             fp_uprn as (
                 select fps.id_fp, fps.geom_fp, u.uprn, (u.geom) geom_uprn
                 from footprints fps 
-                left join uprn_york u 
+                left join uprn u 
                 on st_intersects(fps.geom_fp, u.geom)
             ),
             epc as (
                 select *
                 from epc e
-                where "LOCAL_AUTHORITY" = "%s"
+                where "LOCAL_AUTHORITY" = '%s'
             ),
             fp_uprn_epc as (
                 select row_number() over (order by fpu.id_fp) as id_uprn_epc, *
@@ -252,7 +252,7 @@ def crop_and_fetch_pointclouds_per_building(
                     "LMK_KEY" id_epc_lmk_key,
                     geom_fp,
                     geom_uprn,
-                    geom_pc,
+                    geom_pc geom,
                     delta_x,
                     delta_y,
                     delta_z,
@@ -275,8 +275,9 @@ def crop_and_fetch_pointclouds_per_building(
     # actual fetching step
     gdf = gpd.GeoDataFrame.from_postgis(sql_query_grouped_points, engine)
 
-    # convert fp_geom column from wkb to shape. it is wkb because gpd only loads one geom column from postgis
-    gdf = gdf_fp_geometries_wkb_to_shape(gdf)
+    # convert geom_fp and geom_uprn column from wkb to shape.
+    # those columns are wkb because gpd only loads one geom column from postgis
+    gdf = gdf_geometries_wkb_to_shape(gdf)
 
     return gdf
 
@@ -284,7 +285,7 @@ def crop_and_fetch_pointclouds_per_building(
 def add_floor_points_to_points_in_gdf(gdf):
     pointcloud_with_floor_list = []
     for i, row in enumerate(gdf.iloc):
-        new_pointcloud = add_floor_points_to_pointcloud(row.fp_geom, row.geom, row.z_min)
+        new_pointcloud = add_floor_points_to_pointcloud(row.geom_fp, row.geom, row.z_min)
         pointcloud_with_floor_list.append(new_pointcloud)
         if i % 100 == 0:
             print('processing pointcloud %s out of %s' % (i, len(gdf)))
@@ -343,8 +344,8 @@ def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
 def save_lidar_numpy_list(lidar_numpy_list, gdf, dir_npy):
     # IMPORTANT: lidar_numpy_list order must be the same as gdf to ensure correct naming of .npy
     for i, lidar_pc in enumerate(lidar_numpy_list):
-        npy_file_name = str(gdf.iloc[i].fp_geom.centroid.x) + "_" + \
-                        str(gdf.iloc[i].fp_geom.centroid.y) + ".npy"
+        npy_file_name = str(gdf.iloc[i].geom_fp.centroid.x) + "_" + \
+                        str(gdf.iloc[i].geom_fp.centroid.y) + ".npy"
         npy_file_path = os.path.join(dir_npy, npy_file_name)
         with open(npy_file_path, 'wb') as f:
             np.save(f, arr=lidar_pc)

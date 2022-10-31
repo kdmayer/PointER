@@ -2,7 +2,7 @@ import os.path
 
 from geoalchemy2 import WKBElement
 from geoalchemy2.shape import to_shape
-from shapely.geometry import box
+from shapely.geometry import box, Point
 
 import geopandas as gpd
 import numpy as np
@@ -56,15 +56,21 @@ def convert_numpy_to_multipoint(lidar_numpy: np.ndarray = None):
     return mp
 
 
-def gdf_fp_geometries_wkb_to_shape(gdf: gpd.GeoDataFrame = None):
+def gdf_geometries_wkb_to_shape(gdf: gpd.GeoDataFrame = None):
     # make sure gdf has fp_geom column
-    assert 'fp_geom' in gdf.columns
+    assert 'geom_fp' in gdf.columns
+    assert 'geom_uprn' in gdf.columns
     # define wkb elements
-    gdf_fp_geoms = gdf.fp_geom.apply(WKBElement)
+    gdf_geom_fp = gdf.geom_fp.apply(WKBElement)
+    gdf_geom_uprn = gdf.geom_uprn.apply(WKBElement)
     # convert wkb elements to shapes
-    gdf_fp_geoms = gdf_fp_geoms.apply(to_shape)
+    gdf_geom_fp = gdf_geom_fp.apply(to_shape)
+    # for uprn geom, we need to check, wheter the geom is not nan. we do this by checking if uprn is nan.
+    gdf_geom_uprn = gdf[np.isnan(gdf.uprn)==False].geom_uprn.apply(WKBElement)
+    gdf_geom_uprn = gdf_geom_uprn.apply(to_shape)
     # replace fp_geom column with shapes
-    gdf['fp_geom'] = gdf_fp_geoms
+    gdf['geom_fp'] = gdf_geom_fp
+    gdf['geom_uprn'] = gdf_geom_uprn
     return gdf
 
 
