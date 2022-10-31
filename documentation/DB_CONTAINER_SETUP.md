@@ -34,7 +34,7 @@ to
 
 In order to share a folder from our host computer to the VM, we can specify the shared folder as
 
-    config.vm.synced_folder "data_share", "/home/vagrant/data_share"
+    config.vm.synced_folder "path/to/data_share", "/home/vagrant/data_share"
 
 This way, we can easily exchange data between the VM and our host computer.
 
@@ -50,7 +50,7 @@ Afterwards, spin up the virtual machine with
 
 
 ### Increase partition size for vagrant
-Even though we specified the disk size in the Vagrantfile to 150GB, we require some further steps to liberate this space.
+Even though we specified the disk size in the Vagrantfile to be 150GB, we require some further steps to liberate this space.
 Steps are based on: https://nguyenhoa93.github.io/Increase-VM-Partition/
 
 In the VM, we check the disk size with
@@ -90,15 +90,14 @@ Build the .sif image from .def in the VM with
 
 #### Pointcloud database setup
 Singularity restricts writing directly to the container. Therefore, we need to create two directories on the VM. 
-The folder are used by the pointcloud container to write required setup/configuration files. 
+The folders are used by the pointcloud container to write required setup/configuration files. 
 
     mkdir -p $HOME/pgdata 
     mkdir -p $HOME/pgrun 
 
 Then, we execute the database initialization. By binding both directories, we enable postgres to write on the VM.
 
-    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif initdb
-
+    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif initdb && \
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif pg_ctl -D /var/lib/postgresql/data -l logfile start
 
 Then, we can connect to the intial postgres database to check if the setup was successful
@@ -229,7 +228,6 @@ then:
 
 See here for a description of input parameters: https://postgis.net/workshops/postgis-intro/loading_data.html
 
-
 ### Connect PyCharm Interpreter with Singularity Container:
 
 To add the Singularity container as your Python Interpreter in PyCharm [follow these steps](https://www.jetbrains.com/help/pycharm/configuring-remote-interpreters-via-virtual-boxes.html)
@@ -265,17 +263,15 @@ You can then open the vagrant-based jupyter instance by visiting the following U
 
     http://0.0.0.0:8888/tree
 
-### Note:
+### Notes:
 
-If you have already created and used the vm-singularity folder for another VM, you will need to destroy the VM and delete the Vagrantfile.
+Note 1: If you have already created and used the vm-singularity folder for another VM, you will need to destroy the VM and delete the Vagrantfile.
 
 From the vm-singularity folder, execute
 
-    vagrant destroy && \
-    rm Vagrantfile
+        vagrant destroy && \
+        rm Vagrantfile
 
-Incomplete and Docker do not run on Sherlock
-
-If you want to save a table or materialized view as gpkg or shp, you can use:
+Note 2: If you want to save a table or materialized view as gpkg or shp, you can use:
 
     ogr2ogr -f "GPKG" mynewfilename.gpkg PG:"host=localhost user=vagrant dbname=cs224w_db password=mypassword" "mytablename"
