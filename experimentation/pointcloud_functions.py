@@ -176,27 +176,46 @@ def crop_and_fetch_pointclouds_per_building(
 
     sql_query_grouped_points = (
             """
+            -- select area of interest boundary 
             with area_of_interest as (
-                select st_transform(geom, 27700) geom
-                from local_authority_boundaries lab
-                where lab.lad21cd = \'%s\' 
+                select st_envelope(st_union(st_setsrid(PC_EnvelopeGeometry(pa), 27700))) geom
+                from uk_lidar_data
+                -- select st_transform(geom, 27700) geom
+                -- from local_authority_boundaries lab
+                -- where lab.lad21cd = %s
             ),
             footprints as (
-                select st_buffer(fps.geom, %s) fp_geom, fps.gid id_fp
+                select fps.geom geom_fp, fps.gid id_fp
                 from footprints_verisk fps, area_of_interest
                 where st_intersects(fps.geom, area_of_interest.geom)
                 limit %s
             ),
+            fp_buffer as (
+                select id_fp, st_buffer(fps.geom_fp, %s) geom_fp
+                from footprints fps
+            ),
+            fp_uprn as (
+                select fps.id_fp, fps.geom_fp, u.uprn, (u.geom) geom_uprn
+                from footprints fps 
+                left join uprn_york u 
+                on st_intersects(fps.geom_fp, u.geom)
+            ),
+            fp_uprn_epc as (
+                select row_number() over (order by fpu.id_fp) as id_uprn_epc, *
+                from fp_uprn fpu
+                left join epc_york e
+                on fpu.uprn=e."UPRN" 
+            ),
             patch_unions as (
-                select fps.id_fp, pc_union(pc_intersection(pa, fps.fp_geom)) pau
+                select fpb.id_fp, pc_union(pc_intersection(pa, fpb.geom_fp)) pau
                 from uk_lidar_data lp
-                inner join footprints fps on pc_intersects(lp.pa, fps.fp_geom) 
-                group by fps.id_fp 
+                inner join fp_buffer fpb on pc_intersects(lp.pa, fpb.geom_fp) 
+                group by fpb.id_fp 
             ),
             building_pc as (
                 select 
                     id_fp, 
-                    st_union(geom) geom,
+                    st_union(geom) geom_pc,
                     max(pc_get(p, 'X')) - min(pc_get(p, 'X')) delta_x,
                     max(pc_get(p, 'Y')) - min(pc_get(p, 'Y')) delta_y,
                     max(pc_get(p, 'Z')) - min(pc_get(p, 'Z')) delta_z,
@@ -206,22 +225,47 @@ def crop_and_fetch_pointclouds_per_building(
                         from patch_unions
                     ) po
                     group by id_fp 
+            ),
+            building_pc_fp as (
+                select 
+                    bpc.id_fp id_fp_bpc,
+                    bpc.geom_pc,
+                    fps.geom_fp geom_fp_bpc,
+                    bpc.delta_x,
+                    bpc.delta_y,
+                    bpc.delta_z,
+                    bpc.z_min,
+                    greatest(bpc.delta_x, bpc.delta_y, bpc.delta_z) scaling_factor,
+                    st_numgeometries(geom_pc) num_p_in_pc
+                from building_pc bpc
+                left join footprints fps on bpc.id_fp = fps.id_fp 
+                where st_numgeometries(geom_pc) > %s
+            ),
+            building_pc_fp_epc as (
+                select 
+                    id_uprn_epc id_query,
+                    id_fp,
+                    uprn,
+                    "LMK_KEY" id_epc_lmk_key,
+                    geom_fp,
+                    geom_uprn,
+                    geom_pc,
+                    delta_x,
+                    delta_y,
+                    delta_z,
+                    z_min,
+                    scaling_factor,
+                    num_p_in_pc,
+                    "CURRENT_ENERGY_RATING" energy_rating,		
+                    "CURRENT_ENERGY_EFFICIENCY" energy_efficiency
+                from fp_uprn_epc fps
+                left join building_pc_fp bpf 
+                on fps.id_fp = bpf.id_fp_bpc
             )
-            select 
-                bpc.id_fp,
-                bpc.geom,
-                fps.fp_geom,
-                bpc.delta_x,
-                bpc.delta_y,
-                bpc.delta_z,
-                bpc.z_min,
-                greatest(bpc.delta_x, bpc.delta_y, bpc.delta_z) scaling_factor,
-                st_numgeometries(geom) num_p_in_pc
-            from building_pc bpc
-            left join footprints fps on bpc.id_fp = fps.id_fp 
-            where st_numgeometries(geom) > %s
+            select distinct *
+            from building_pc_fp_epc
             
-            """ % (AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD)
+            """ % (AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS, POINT_COUNT_THRESHOLD)
     )
 
     # actual fetching step
