@@ -38,5 +38,6 @@ assets/footprints/*
 assets/local_authority_boundaries/*
 assets/uk_lidar_data/*
 assets/uprn/*
+assets/epc/*
 
 venv/*
