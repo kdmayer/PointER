@@ -75,21 +75,21 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
 
     print('Importing pointcloud data from las to database. This process can take several minutes')
     # unzip LAZ files, if corresponding LAS file does not exist
-    for i, import_laz_files in enumerate(import_laz_files):
-        print('unpacking laz file %s of %s: %s' % (str(i + 1), str(len(import_laz_files)), import_laz_files))
-        # unzip laz to las
-        in_laz = os.path.join(DIR_LAS_FILES, import_laz_files)
-        out_las = os.path.join(DIR_LAS_FILES, import_laz_files[:-4] + '.las')
-        las = laspy.read(in_laz)
-        las = laspy.convert(las)
-        las.write(out_las)
+    for i, import_laz_file in enumerate(import_laz_files):
+        # print('unpacking laz file %s of %s: %s' % (str(i + 1), str(len(import_laz_files)), import_laz_file))
+        # unzip laz to las (not necessary anymore - LAZ is directly imported to db)
+        in_laz = os.path.join(DIR_LAS_FILES, import_laz_file)
+        #out_las = os.path.join(DIR_LAS_FILES, import_laz_file[:-4] + '.las')
+        #las = laspy.read(in_laz)
+        #las = laspy.convert(las)
+        #las.write(out_las)
 
         # load las files into database
         las_to_db_pipeline = {
             "pipeline": [
                 {
                     "type": "readers.las",
-                    "filename": out_las,
+                    "filename": in_laz,
                     "spatialreference": "EPSG:27700"
                 },
                 {
@@ -111,7 +111,7 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
             ]
         }
 
-        print('loading laz file %s of %s into database' % (str(i + 1), str(len(import_laz_files))))
+        print('importing laz file %s of %s into database' % (str(i + 1), str(len(import_laz_files))))
         pipeline = pdal.Pipeline(json.dumps(las_to_db_pipeline))
         pipeline.execute()
 
