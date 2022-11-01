@@ -59,30 +59,36 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     laz_file_list = [file for file in files_uk_lidar if file[-4:] == ".laz"]
     # if no history file exists: use all laz files in directory and create history file
     if not os.path.isfile(import_history_filename):
-        print(""" no LAZ files have been imported to database so far. 
-        if they have, make sure the import history.csv is in the LAZ file directory""")
+        print("""no LAZ files have been imported to database so far. if they have, make sure the import history.csv 
+        is in the LAZ file directory""")
         import_laz_files = laz_file_list.copy()
         df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
         df_new_imports.to_csv(import_history_filename)
+        print(import_laz_files)
+        print(len(import_laz_files))
     # if no history file does exist: select only non imported files and update history file
     elif os.path.isfile(import_history_filename):
+        print("Some of the files in the directory have already been imported to DB (see %s). Only non imported files "
+              "will be uploaded to database" %import_history_filename)
+
         df_import_history = pd.read_csv(import_history_filename)
+        imported_files_list = list(df_import_history['imported_files'])
         import_laz_files = [laz_file for laz_file in laz_file_list
-                            if not laz_file in df_import_history['imported_files']]
+                            if not laz_file in imported_files_list]
         df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
         df_import_history.append(df_new_imports)
         df_import_history.to_csv(import_history_filename)
 
-    print('Importing pointcloud data from las to database. This process can take several minutes')
     # unzip LAZ files, if corresponding LAS file does not exist
     for i, import_laz_file in enumerate(import_laz_files):
+        print('Importing pointcloud data from laz to database. This process can take several minutes')
         # print('unpacking laz file %s of %s: %s' % (str(i + 1), str(len(import_laz_files)), import_laz_file))
         # unzip laz to las (not necessary anymore - LAZ is directly imported to db)
         in_laz = os.path.join(DIR_LAS_FILES, import_laz_file)
-        #out_las = os.path.join(DIR_LAS_FILES, import_laz_file[:-4] + '.las')
-        #las = laspy.read(in_laz)
-        #las = laspy.convert(las)
-        #las.write(out_las)
+        # out_las = os.path.join(DIR_LAS_FILES, import_laz_file[:-4] + '.las')
+        # las = laspy.read(in_laz)
+        # las = laspy.convert(las)
+        # las.write(out_las)
 
         # load las files into database
         las_to_db_pipeline = {
@@ -115,7 +121,7 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
         pipeline = pdal.Pipeline(json.dumps(las_to_db_pipeline))
         pipeline.execute()
 
-    print('Loading data into database finished')
+    print('Importing data into database finished')
 
     return
 
