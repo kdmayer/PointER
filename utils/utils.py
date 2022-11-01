@@ -119,6 +119,10 @@ def normalize_geom(geom: shapely.geometry = None, scaling_factor: int = 1000, ra
     return lidar_numpy
 
 
-
+def file_name_from_polygon_list(pol_list: list = None, file_extension: str = None):
+    # takes a GeoDataFrame or slice of it and returns the filename based on the footprints centroid to ensure all files
+    # are called the same
+    file_names = [str(pol.centroid.x) + '_' + str(pol.centroid.y) + file_extension for pol in pol_list]
+    return file_names
 
 
