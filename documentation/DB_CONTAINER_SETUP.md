@@ -23,6 +23,13 @@ Specify the desired disk size in the Vagrantfile
 
         config.disksize.size = '150GB'
 
+To provide enough working memory for the large LAZ point cloud files, we need to change the memory to 4 GB
+      
+    config.vm.provider "virtualbox" do |vb|
+      #   # Customize the amount of memory on the VM:
+        vb.memory = "4096"
+    end
+
 In order to use Jupyter Notebook from our VM, we also need to change the following line in our Vagrantfile
 
     # config.vm.network "forwarded_port", guest: 80, host: 8080
@@ -97,7 +104,7 @@ The folders are used by the pointcloud container to write required setup/configu
 
 Then, we execute the database initialization. By binding both directories, we enable postgres to write on the VM.
 
-    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif initdb && \
+    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif initdb -E UTF8 --locale=C && \
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif pg_ctl -D /var/lib/postgresql/data -l logfile start
 
 Then, we can connect to the intial postgres database to check if the setup was successful
@@ -192,9 +199,12 @@ A simple way to copy-paste our data in the "share folder" we defined in the Vagr
 Then, we move the data to project folder, so the singularity container can access them 
 (not all of the VM's directories are accessible from within singularity):
 
-    mv /home/vagrant/data_share/uprn.gpkg CS224W_LIDAR/assets/uprn/uprn.gpkg 
-    mv /home/vagrant/data_share/UKBuildings_Edition_13_online.gpkg.gpkg CS224W_LIDAR/assets/footprints/UKBuildings_Edition_13_online.gpkg.gpkg
-    mv /home/vagrant/data_share/local_authority_boundaries /local_authority_boundaries
+    mv /home/vagrant/data_share/uprn_york.gpkg CS224W_LIDAR/assets/uprn/uprn_york.gpkg 
+    mv /home/vagrant/data_share/footprints_verisk_york.gpkg CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
+    sudo mv /home/vagrant/data_share/local_authority_boundaries_york.gpkg CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
+
+This example works with the provide file snippets for York. Make sure to adapt the filenames to adequately, when running
+the setup with the entire datasets. 
 
 Connect to singularity shell:
 
@@ -216,15 +226,19 @@ then:
 
     ogr2ogr -nln uprn -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
-    CS224W_LIDAR/assets/uprn/uprn.gpkg
-        
+    /home/vagrant/CS224W_LIDAR/assets/uprn/uprn_york.gpkg
+     
     ogr2ogr -nln footprints_verisk -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
-    CS224W_LIDAR/assets/footprints/UKBuildings_Edition_13_online.gpkg
-    
+    /home/vagrant/CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
+
     ogr2ogr -nln local_authority_boundaries -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
-    CS224W_LIDAR/assets/local_authority_boundaries/LAD_DEC_2021_GB_BFC.shp
+    /home/vagrant/CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
+
+This example works with the provide file snippets for York. Make sure to adapt the filenames to adequately, when running
+the setup with the entire datasets. 
+Note, that instead of file format gpkg, .shp files could also be imported with the same command.
 
 See here for a description of input parameters: https://postgis.net/workshops/postgis-intro/loading_data.html
 
