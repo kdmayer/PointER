@@ -54,53 +54,56 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     # get files in directory
     files_uk_lidar = os.listdir(DIR_LAS_FILES)
 
-    # check which laz files have not yet been unpacked
-    import_history_filename = os.path.join(DIR_LAS_FILES, "laz_import_history_do_not_delete.csv")
-    laz_file_list = [file for file in files_uk_lidar if file[-4:] == ".laz"]
-    # if no history file exists: use all laz files in directory and create history file
-    if not os.path.isfile(import_history_filename):
-        print("""no LAZ files have been imported to database so far. if they have, make sure the import history.csv 
-        is in the LAZ file directory""")
-        import_laz_files = laz_file_list.copy()
-        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
-        df_new_imports.to_csv(import_history_filename)
-        print(import_laz_files)
-        print(len(import_laz_files))
-    # if no history file does exist: select only non imported files and update history file
-    elif os.path.isfile(import_history_filename):
-        print("Some of the files in the directory have already been imported to DB (see %s). Only non imported files "
-              "will be uploaded to database" %import_history_filename)
+    laz_files = [file for file in files_uk_lidar if file[-4:] == ".laz"]
+    las_files = [file for file in files_uk_lidar if file[-4:] == ".las"]
 
-        df_import_history = pd.read_csv(import_history_filename)
-        imported_files_list = list(df_import_history['imported_files'])
-        import_laz_files = [laz_file for laz_file in laz_file_list
-                            if not laz_file in imported_files_list]
-        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
-        df_import_history.append(df_new_imports)
-        df_import_history.to_csv(import_history_filename)
+    laz_file_list = [laz_file for laz_file in laz_files if not laz_file[:-4] + '.las' in las_files]
+
+    import_laz_files = laz_file_list
+    #    # check which laz files have not yet been unpacked
+    #    import_history_filename = os.path.join(DIR_LAS_FILES, "laz_import_history_do_not_delete.csv")
+    #    # if no history file exists: use all laz files in directory and create history file
+    #    if not os.path.isfile(import_history_filename):
+    #        print("""no LAZ files have been imported to database so far. if they have, make sure the import history.csv
+    #        is in the LAZ file directory""")
+    #        import_laz_files = laz_file_list.copy()
+    #        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
+    #        df_new_imports.to_csv(import_history_filename)
+    #    # if no history file does exist: select only non imported files and update history file
+    #    elif os.path.isfile(import_history_filename):
+    #        print("Some of the files in the directory have already been imported to DB (see %s). Only non imported files "
+    #              "will be uploaded to database" %import_history_filename)
+
+    #        df_import_history = pd.read_csv(import_history_filename)
+    #        imported_files_list = list(df_import_history['imported_files'])
+    #        import_laz_files = [laz_file for laz_file in laz_file_list
+    #                            if not laz_file in imported_files_list]
+    #        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
+    #        df_import_history.append(df_new_imports)
+    #        df_import_history.to_csv(import_history_filename)
 
     # unzip LAZ files, if corresponding LAS file does not exist
+    print('Importing pointcloud data from laz to database. This process can take several minutes')
     for i, import_laz_file in enumerate(import_laz_files):
-        print('Importing pointcloud data from laz to database. This process can take several minutes')
-        # print('unpacking laz file %s of %s: %s' % (str(i + 1), str(len(import_laz_files)), import_laz_file))
+        print('unpacking laz file %s of %s: %s' % (str(i + 1), str(len(import_laz_files)), import_laz_file))
         # unzip laz to las (not necessary anymore - LAZ is directly imported to db)
         in_laz = os.path.join(DIR_LAS_FILES, import_laz_file)
-        # out_las = os.path.join(DIR_LAS_FILES, import_laz_file[:-4] + '.las')
-        # las = laspy.read(in_laz)
-        # las = laspy.convert(las)
-        # las.write(out_las)
+        out_las = os.path.join(DIR_LAS_FILES, import_laz_file[:-4] + '.las')
+        las = laspy.read(in_laz)
+        las = laspy.convert(las)
+        las.write(out_las)
 
         # load las files into database
         las_to_db_pipeline = {
             "pipeline": [
                 {
                     "type": "readers.las",
-                    "filename": in_laz,
+                    "filename": out_las,
                     "spatialreference": "EPSG:27700"
                 },
                 {
                     "type": "filters.chipper",
-                    "capacity": 800
+                    "capacity": 400
                 },
                 {
                     "type": "writers.pgpointcloud",
@@ -117,7 +120,8 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
             ]
         }
 
-        print('importing laz file %s of %s into database' % (str(i + 1), str(len(import_laz_files))))
+        print('importing laz file %s of %s into database: %s' % (
+        str(i + 1), str(len(import_laz_files)), str(import_laz_file)))
         pipeline = pdal.Pipeline(json.dumps(las_to_db_pipeline))
         pipeline.execute()
 
@@ -289,7 +293,7 @@ def crop_and_fetch_pointclouds_per_building(
             )
             select distinct *
             from building_pc_fp_epc
-            
+
             """ % (AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS,
                    AREA_OF_INTEREST_CODE, POINT_COUNT_THRESHOLD)
     )
