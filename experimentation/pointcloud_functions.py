@@ -313,7 +313,7 @@ def add_floor_points_to_points_in_gdf(gdf):
     for i, row in enumerate(gdf.iloc):
         new_pointcloud = add_floor_points_to_pointcloud(row.geom_fp, row.geom, row.z_min)
         pointcloud_with_floor_list.append(new_pointcloud)
-        if i % 100 == 0:
+        if i % 5000 == 0:
             print('processing pointcloud %s out of %s' % (i, len(gdf)))
     gdf = gdf.assign(geom=pointcloud_with_floor_list)
     return gdf
