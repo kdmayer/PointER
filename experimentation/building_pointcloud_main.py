@@ -31,7 +31,7 @@ from utils.aerial_image import get_aerial_image_lat_lon
 
 ######################   Configurations   #####################################
 # Define pointcloud parameters
-AREA_OF_INTEREST_CODE = 'E08000026' # UK local authority boundary code to specify area of interest (AOI)
+AREA_OF_INTEREST_CODE = 'E07000178' #'E08000026' # UK local authority boundary code to specify area of interest (AOI)
 BUILDING_BUFFER_METERS = 0.5 # buffer around building footprint in meters
 MAX_NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be created. Use "None" to use all footprints in AOI
 POINT_COUNT_THRESHOLD = 50  # define minimum points in pointcloud, smaller pointclouds are dismissed
@@ -40,9 +40,9 @@ NUMBER_EXAMPLE_VISUALIZATIONS = 50  # define how many example 3D plots should be
 # Define project base directory and paths
 # DIR_BASE = os.getcwd() # in jupyter, use a different approach (above) to determine project DIR
 DIR_ASSETS = os.path.join(DIR_BASE, 'assets')
-DIR_OUTPUTS = os.path.join("D:\\data_storage_UK_LiDAR", 'outputs')
+DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
 
-DIR_LAZ_FILES = os.path.join("D:\\data_storage_UK_LiDAR\\lidar_tiles\\Coventry_LIDAR_LAZ") #(DIR_ASSETS, "uk_lidar_data")
+DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
 DIR_EPC = os.path.join(DIR_ASSETS, "epc")
 DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
 DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
@@ -87,11 +87,11 @@ print(res.all())
 print("Starting LAZ to DB", datetime.now().strftime("%H:%M:%S"))
 load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 
-# # Load EPC data into database
-# file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
-# df_epc = pd.read_csv(file_path)
-# with engine.connect() as con:
-#     df_epc.to_sql('epc', con=con, if_exists='replace', index=False)
+# Load EPC data into database
+file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
+df_epc = pd.read_csv(file_path)
+with engine.connect() as con:
+    df_epc.to_sql('epc', con=con, if_exists='replace', index=False)
 
 # Add geoindex to footprint and lidar tables and vacuum table
 print("Starting geoindexing", datetime.now().strftime("%H:%M:%S"))
@@ -153,19 +153,18 @@ gdf_mapping = pd.DataFrame(
      "num_p_in_pc": gdf.num_p_in_pc,
      "epc_rating": gdf.energy_rating,
      "epc_efficiency": gdf.energy_efficiency,
-     "file_name": file_names
-    }
+     "file_name": file_names}
 )
 save_path = os.path.join(DIR_AOI_OUTPUT, str('label_filename_mapping_' + AREA_OF_INTEREST_CODE + ".json"))
 gdf_mapping.to_json(save_path, orient='index')
 
-# Visualization for evaliation of results
+# Visualization for evaluation of results
 
+pce_file_names = file_name_from_polygon_list(list(gdf_pc.geom_fp), file_extension=".html")
 # Visualize example building pointcloud data
 for i, lidar_pc in enumerate(lidar_numpy_list):
     if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-        pce_file_name = file_name_from_polygon_list(list(gdf_pc.iloc[i].geom_fp), file_extension=".html")
-        save_path = os.path.join(DIR_VISUALIZATION, pce_file_name)
+        save_path = os.path.join(DIR_VISUALIZATION, pce_file_names[i])
         visualize_single_3d_point_cloud(
             lidar_pc,
             title=str(i),
@@ -176,14 +175,14 @@ for i, lidar_pc in enumerate(lidar_numpy_list):
 # Download aerial image for the building examples
 gdf_lat_lon = gdf.to_crs(4326)
 
+img_filenames = file_name_from_polygon_list(list(gdf_pc.geom_fp), file_extension=".png")
 for i, building in enumerate(gdf_lat_lon.iloc):
-    img_filename = file_name_from_polygon_list(list(gdf_pc.iloc[i].geom_fp), file_extension=".png")
     if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
         cp = building.geom.centroid
         get_aerial_image_lat_lon(
             latitude=cp.y,
             longitude=cp.x,
-            image_name=img_filename,
+            image_name=img_filenames[i],
             horizontal_px=512,
             vertical_px=512,
             scale=1,
