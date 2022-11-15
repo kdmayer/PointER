@@ -121,7 +121,7 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
         }
 
         print('importing laz file %s of %s into database: %s' % (
-        str(i + 1), str(len(import_laz_files)), str(import_laz_file)))
+            str(i + 1), str(len(import_laz_files)), str(import_laz_file)))
         pipeline = pdal.Pipeline(json.dumps(las_to_db_pipeline))
         pipeline.execute()
 
@@ -308,14 +308,67 @@ def crop_and_fetch_pointclouds_per_building(
     return gdf
 
 
+def create_footprints_in_area_materialized_view(db_connection_url: str, AREA_OF_INTEREST_CODE: str, NUMBER_OF_FOOTPRINTS: str):
+    sql_query_get_existing_materialized_views = (
+        """select matviewname as view_name from pg_matviews where matviewname = '%s'""" % AREA_OF_INTEREST_CODE
+    )
+    sql_query_drop_existing_materialized_view = (
+            """drop materialized view "%s";""" % AREA_OF_INTEREST_CODE
+    )
+    sql_query_footprint_materialzed_view = (
+            """
+            create materialized view "%s" as (
+                with area_of_interest as (
+                    select st_transform(geom, 27700) geom
+                    from local_authority_boundaries lab
+                    where lab.lad21cd = '%s'
+                ),
+                footprints as (
+                    select row_number() over (order by fps.gid) as id_fp_chunks, fps.geom geom_fp, fps.gid id_fp
+                    from footprints_verisk fps, area_of_interest
+                    where st_intersects(fps.geom, area_of_interest.geom)
+                    limit %s
+                )
+                select *
+                from footprints
+            )
+    """ % (AREA_OF_INTEREST_CODE, AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS)
+    )
+    sql_query_get_number_of_footprints = (
+        """select count(*) from "%s" """ % AREA_OF_INTEREST_CODE
+    )
+
+
+    # create connection and cursor
+    connection_psycopg2 = psycopg2.connect(db_connection_url)
+    cursor = connection_psycopg2.cursor()
+    # check if materialized view already exists
+    cursor.execute(sql_query_get_existing_materialized_views)
+    existing_view = np.array(cursor.fetchall())
+    # drop existing materialized view
+    if len(existing_view) == 1:
+        cursor.execute(sql_query_drop_existing_materialized_view)
+    # create new materialized view with footpints in aera of interest
+    cursor.execute(sql_query_footprint_materialzed_view)
+    # get number of footprints in aera of interest
+    cursor.execute(sql_query_get_number_of_footprints)
+    num_footprints = cursor.fetchall()[0][0]
+    # commit the transaction
+    connection_psycopg2.commit()
+    # close the database communication
+    connection_psycopg2.close()
+    return num_footprints
+
+
 def add_floor_points_to_points_in_gdf(gdf):
     pointcloud_with_floor_list = []
     for i, row in enumerate(gdf.iloc):
         new_pointcloud = add_floor_points_to_pointcloud(row.geom_fp, row.geom, row.z_min)
         pointcloud_with_floor_list.append(new_pointcloud)
-        if i % 5000 == 0:
+        if i % 1000 == 0:
             print('processing pointcloud %s out of %s' % (i, len(gdf)))
     gdf = gdf.assign(geom=pointcloud_with_floor_list)
+    print('list added to gdf')
     return gdf
 
 
@@ -339,14 +392,12 @@ def add_floor_points_to_pointcloud(building_footprint: shapely.geometry.Polygon,
     return new_multipoint
 
 
-###############################################################################
 def get_scaling_factor(gdf):
     # Determine scaling factor (max delta_x/delta_y/delta_z of all points)
     scaling_factor = np.max(gdf.scaling_factor)
     return scaling_factor
 
 
-###############################################################################
 def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
     # Convert fetched building point clouds to numpy
     # make sure all building point clouds have enough points,
@@ -365,7 +416,6 @@ def pointcloud_gdf_to_numpy(gdf, scaling_factor, POINT_COUNT_THRESHOLD):
     return lidar_numpy_list
 
 
-###############################################################################
 # Save building point clouds as npy
 def save_lidar_numpy_list(lidar_numpy_list, gdf, dir_npy):
     # IMPORTANT: lidar_numpy_list order must be the same as gdf to ensure correct naming of .npy
@@ -376,3 +426,18 @@ def save_lidar_numpy_list(lidar_numpy_list, gdf, dir_npy):
         with open(npy_file_path, 'wb') as f:
             np.save(f, arr=lidar_pc)
     return
+
+
+def output_folder_setup(dir_outputs: str, area_of_interest_code: str):
+    # create area of interest folder
+    DIR_AOI_OUTPUT = os.path.join(dir_outputs, area_of_interest_code)
+    if os.path.isdir(DIR_AOI_OUTPUT):
+        print('output for this area of interest already exists. delete or choose other area code')
+    else:
+        os.mkdir(DIR_AOI_OUTPUT)
+        # create sub-folders for pointcloud data and meta data
+        directory_list = ['npy_raw', 'footprints', 'uprn', 'epc', 'filename_mapping']
+        for dir in directory_list:
+            dir_path = os.path.join(DIR_AOI_OUTPUT, dir)
+            if not os.path.isdir(dir_path): os.mkdir(dir_path)
+    return DIR_AOI_OUTPUT

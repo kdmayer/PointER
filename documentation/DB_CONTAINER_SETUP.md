@@ -294,4 +294,4 @@ in the command line interface.
 
 Note 3: If you want to save a table or materialized view as gpkg or shp, you can use:
 
-    ogr2ogr -f "GPKG" mynewfilename.gpkg PG:"host=localhost user=vagrant dbname=cs224w_db password=mypassword" "mytablename"
+        ogr2ogr -f "GPKG" mynewfilename.gpkg PG:"host=localhost user=vagrant dbname=cs224w_db password=mypassword" "mytablename"
