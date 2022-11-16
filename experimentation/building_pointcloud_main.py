@@ -1,9 +1,14 @@
+# todo: remove the surpression of warnings
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 # Import python packages
 import os
 import sys
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 from sqlalchemy import create_engine
 from datetime import datetime
@@ -32,12 +37,12 @@ from utils.aerial_image import get_aerial_image_lat_lon
 
 ######################   Configurations   #####################################
 # Define pointcloud parameters
-AREA_OF_INTEREST_CODE = 'E08000026'  # 'E07000178'  # UK local authority boundary code to specify area of interest (AOI)
+AREA_OF_INTEREST_CODE = 'E07000178'  # 'E08000026'  # UK local authority boundary code to specify area of interest (AOI)
 BUILDING_BUFFER_METERS = 0.5  # buffer around building footprint in meters
 MAX_NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be created. Use "None" to use all footprints in AOI
-NUM_FOOTPRINTS_CHUNK_SIZE = 100  # number of footprints per query (size of data requires processing in chunks)
+NUM_FOOTPRINTS_CHUNK_SIZE = 500  # number of footprints per query (size of data requires processing in chunks)
 POINT_COUNT_THRESHOLD = 100  # define minimum points in pointcloud, smaller pointclouds are dismissed
-NUMBER_EXAMPLE_VISUALIZATIONS = 50  # define how many example 3D plots should be created
+NUMBER_EXAMPLE_VISUALIZATIONS = 20  # define how many example 3D plots should be created
 
 # Define project base directory and paths
 # DIR_BASE = os.getcwd() # in jupyter, use a different approach (above) to determine project DIR
@@ -81,22 +86,22 @@ print(res.all())
 # Load point cloud data into database
 # Unpacks LAZ-files and inserts all newly unpacked LAS-files into the database
 # Existing LAS-files in directory are considered to be in the database already
-# print("Starting LAZ to DB", datetime.now().strftime("%H:%M:%S"))
-# load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
+print("Starting LAZ to DB", datetime.now().strftime("%H:%M:%S"))
+load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 
 # todo: uncomment
 # # Load EPC data into database
-# file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
-# df_epc = pd.read_csv(file_path)
-# with engine.connect() as con:
-#     df_epc.to_sql('epc', con=con, if_exists='replace', index=False)
+file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
+df_epc = pd.read_csv(file_path)
+with engine.connect() as con:
+    df_epc.to_sql('epc', con=con, if_exists='replace', index=False)
 
 # todo: uncomment
 # Add geoindex to footprint and lidar tables and vacuum table
-# print("Starting geoindexing", datetime.now().strftime("%H:%M:%S"))
-# db_table_names = [DB_TABLE_NAME_LIDAR, DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_UPRN, DB_TABLE_NAME_AREA_OF_INTEREST]
-# db_is_lidar = [1, 0, 0, 0]
-# add_geoindex_to_databases(config.DATABASE_URL, db_table_names, db_is_lidar)
+print("Starting geoindexing", datetime.now().strftime("%H:%M:%S"))
+db_table_names = [DB_TABLE_NAME_LIDAR, DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_UPRN, DB_TABLE_NAME_AREA_OF_INTEREST]
+db_is_lidar = [1, 0, 0, 0]
+add_geoindex_to_databases(config.DATABASE_URL, db_table_names, db_is_lidar)
 
 # Adapt NUMBER_OF_FOOTPRINTS to use all footprints if None
 if MAX_NUMBER_OF_FOOTPRINTS == None:
