@@ -4,11 +4,9 @@ import sys
 
 import geopandas as gpd
 import numpy as np
-import pandas as pd
 
 from sqlalchemy import create_engine
 from datetime import datetime
-
 
 # Add parent folder to path, so that notebook can find .py scripts
 DIR_BASE = os.path.abspath(os.path.join('..'))
@@ -24,19 +22,20 @@ from pointcloud_functions import \
     crop_and_fetch_pointclouds_per_building, \
     save_lidar_numpy_list, \
     output_folder_setup, \
-    create_footprints_in_area_materialized_view
+    create_footprints_in_area_materialized_view, \
+    save_raw_input_information, \
+    stitch_raw_input_information
 
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
 from utils.visualization import visualize_single_3d_point_cloud
 from utils.aerial_image import get_aerial_image_lat_lon
 
-
 ######################   Configurations   #####################################
 # Define pointcloud parameters
-AREA_OF_INTEREST_CODE = 'E07000178' #'E08000026' # UK local authority boundary code to specify area of interest (AOI)
-BUILDING_BUFFER_METERS = 0.5 # buffer around building footprint in meters
+AREA_OF_INTEREST_CODE = 'E08000026'  # 'E07000178'  # UK local authority boundary code to specify area of interest (AOI)
+BUILDING_BUFFER_METERS = 0.5  # buffer around building footprint in meters
 MAX_NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be created. Use "None" to use all footprints in AOI
-NUM_FOOTPRINTS_CHUNK_SIZE = 10000 # number of footprints per query (size of data requires processing in chunks)
+NUM_FOOTPRINTS_CHUNK_SIZE = 100  # number of footprints per query (size of data requires processing in chunks)
 POINT_COUNT_THRESHOLD = 100  # define minimum points in pointcloud, smaller pointclouds are dismissed
 NUMBER_EXAMPLE_VISUALIZATIONS = 50  # define how many example 3D plots should be created
 
@@ -51,7 +50,8 @@ DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
 DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
 
 # Create a new output folder for the defined area of interest
-DIR_AOI_OUTPUT = output_folder_setup(DIR_OUTPUTS, AREA_OF_INTEREST_CODE)
+SUB_FOLDER_LIST = ['npy_raw', 'footprints', 'uprn', 'epc', 'filename_mapping']
+DIR_AOI_OUTPUT = output_folder_setup(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST)
 
 # Check that all required directories exist
 check_directory_paths([DIR_ASSETS, DIR_OUTPUTS, DIR_LAZ_FILES, DIR_VISUALIZATION, DIR_AERIAL_IMAGES, DIR_AOI_OUTPUT])
@@ -84,14 +84,14 @@ print(res.all())
 # print("Starting LAZ to DB", datetime.now().strftime("%H:%M:%S"))
 # load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 
-#todo: uncomment
+# todo: uncomment
 # # Load EPC data into database
 # file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
 # df_epc = pd.read_csv(file_path)
 # with engine.connect() as con:
 #     df_epc.to_sql('epc', con=con, if_exists='replace', index=False)
 
-#todo: uncomment
+# todo: uncomment
 # Add geoindex to footprint and lidar tables and vacuum table
 # print("Starting geoindexing", datetime.now().strftime("%H:%M:%S"))
 # db_table_names = [DB_TABLE_NAME_LIDAR, DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_UPRN, DB_TABLE_NAME_AREA_OF_INTEREST]
@@ -109,60 +109,38 @@ num_footprints = create_footprints_in_area_materialized_view(
 # Fetch cropped point clouds from database
 print("Starting point cloud cropping", datetime.now().strftime("%H:%M:%S"))
 # processing the cropping in chunks
-num_chunks = np.ceil(num_footprints / NUM_FOOTPRINTS_CHUNK_SIZE)
-for n_chunk in np.arange(0, num_chunks):
-    print("Prcoessing footprints chunk %s out of %s - " %(n_chunk, num_chunks), datetime.now().strftime("%H:%M:%S"))
-gdf = crop_and_fetch_pointclouds_per_building(
-    AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, MAX_NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine)
+num_iterations = np.ceil(num_footprints / NUM_FOOTPRINTS_CHUNK_SIZE)
+for n_iteration in np.arange(0, num_iterations):
+    print("Prcoessing footprints - chunk %s out of %s - " % (n_iteration, num_iterations),
+          datetime.now().strftime("%H:%M:%S"))
+    fp_num_start = n_iteration * NUM_FOOTPRINTS_CHUNK_SIZE
+    fp_num_end = (n_iteration + 1) * NUM_FOOTPRINTS_CHUNK_SIZE
+    gdf = crop_and_fetch_pointclouds_per_building(
+        fp_num_start, fp_num_end, AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, MAX_NUMBER_OF_FOOTPRINTS,
+        POINT_COUNT_THRESHOLD, engine
+    )
+    # Add floor points to building pointcloud
+    print("Floor point adding - chunk %s out of %s - " % (n_iteration, num_iterations),
+          datetime.now().strftime("%H:%M:%S"))
+    gdf_pc = gdf[gdf.geom != None].copy()
+    gdf_pc = add_floor_points_to_points_in_gdf(gdf_pc)
 
-# Add floor points to building pointcloud
-print("Starting floor point adding", datetime.now().strftime("%H:%M:%S"))
-gdf_pc = gdf[gdf.geom!=None].copy()
-gdf_pc = add_floor_points_to_points_in_gdf(gdf_pc)
+    # Save raw pointcloud without threshhold or scaling
+    print("Numpy list creation - chunk %s out of %s - " % (n_iteration, num_iterations),
+          datetime.now().strftime("%H:%M:%S"))
+    lidar_numpy_list = list(gdf_pc.geom.apply(convert_multipoint_to_numpy))
+    # Save building point clouds as npy
+    print("Numpy saving - chunk %s out of %s - " % (n_iteration, num_iterations), datetime.now().strftime("%H:%M:%S"))
+    dir_npy = os.path.join(DIR_AOI_OUTPUT, 'npy_raw')
+    save_lidar_numpy_list(lidar_numpy_list, gdf_pc, dir_npy)
 
-# Save raw pointcloud without threshhold or scaling
-print("numpy list creation", datetime.now().strftime("%H:%M:%S"))
-lidar_numpy_list = list(gdf_pc.geom.apply(convert_multipoint_to_numpy))
-# Save building point clouds as npy
-print("Starting numpy saving", datetime.now().strftime("%H:%M:%S"))
-save_lidar_numpy_list(lidar_numpy_list, gdf_pc, DIR_NPY)
+    # Save raw information of footprints, epc label, uprn, file mapping
+    print("Save additional data - chunk %s out of %s - " % (n_iteration, num_iterations),
+          datetime.now().strftime("%H:%M:%S"))
+    save_raw_input_information(n_iteration, gdf, DIR_AOI_OUTPUT, AREA_OF_INTEREST_CODE)
 
-# Save raw information of footprints, epc label, uprn, file mapping
-# adapt
-# footprints
-print("Starting saving additional data", datetime.now().strftime("%H:%M:%S"))
-gdf_footprints = gpd.GeoDataFrame({"if_fp": gdf.id_fp, "geometry": gdf.geom_fp})
-gdf_footprints = gdf_footprints.drop_duplicates()
-save_path = os.path.join(DIR_AOI_OUTPUT, str('footprints_' + AREA_OF_INTEREST_CODE + ".json"))
-gdf_footprints.to_file(save_path, driver="GeoJSON")
-# uprn
-gdf_uprn = gpd.GeoDataFrame({"uprn": gdf.uprn, "geometry": gdf.geom_uprn})
-gdf_uprn = gdf_uprn.drop_duplicates()
-save_path = os.path.join(DIR_AOI_OUTPUT, str('uprn_' + AREA_OF_INTEREST_CODE + ".json"))
-gdf_uprn.to_file(save_path, driver="GeoJSON")
-# epc label
-gdf_epc = pd.DataFrame(
-    {"id_epc_lmk_key": gdf.id_epc_lmk_key,
-     "rating": gdf.energy_rating,
-     "efficiency": gdf.energy_efficiency}
-)
-gdf_epc = gdf_epc.drop_duplicates()
-save_path = os.path.join(DIR_AOI_OUTPUT, str('epc_' + AREA_OF_INTEREST_CODE + ".json"))
-gdf_epc.to_json(save_path, orient='records')
-# label - filename mapping
-file_names = file_name_from_polygon_list(list(gdf.geom_fp), file_extension='.npy')
-gdf_mapping = pd.DataFrame(
-    {"id_fp": gdf.id_fp,
-     "uprn": gdf.uprn,
-     "id_id_epc_lmk_key": gdf.id_epc_lmk_key,
-     "id_query": gdf.id_query,
-     "num_p_in_pc": gdf.num_p_in_pc,
-     "epc_rating": gdf.energy_rating,
-     "epc_efficiency": gdf.energy_efficiency,
-     "file_name": file_names}
-)
-save_path = os.path.join(DIR_AOI_OUTPUT, str('label_filename_mapping_' + AREA_OF_INTEREST_CODE + ".json"))
-gdf_mapping.to_json(save_path, orient='index')
+# stitch all raw input information jsons to create one result json
+stitch_raw_input_information(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST)
 
 # Visualization for evaluation of results
 # Visualize example building pointcloud data

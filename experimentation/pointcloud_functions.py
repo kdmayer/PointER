@@ -1,5 +1,6 @@
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 
 import json
 import laspy
@@ -14,7 +15,7 @@ from geoalchemy2 import Geometry
 
 import config as config
 
-from utils.utils import normalize_geom, gdf_geometries_wkb_to_shape
+from utils.utils import normalize_geom, gdf_geometries_wkb_to_shape, file_name_from_polygon_list
 
 
 def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS):
@@ -179,14 +180,15 @@ def add_geoindex_to_databases(db_connection_url: str, db_table_name_list: list, 
     return
 
 
-def crop_and_fetch_pointclouds_per_building(
-        AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine):
+def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS,
+        NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine):
     # Fetch cropped point clouds from database
 
     # Query to fetch points within building footprints as multipoint grouped by building.
     # IMPORTANT: query with geopandas requires a geom column in database to create a GeoDataFrame
 
     # SQL Query explanation:
+    # todo: adapt description for final version
     # with footprints: defines prepares footprints from footprint table
     # with patch_unions: crops the point clouds and prepares a pointcloud union per building
     # with building_pc: transforms the pointcloud unions into multi points, grouped per building
@@ -203,15 +205,10 @@ def crop_and_fetch_pointclouds_per_building(
     sql_query_grouped_points = (
             """
             -- select area of interest boundary 
-            with area_of_interest as (
-                select st_transform(geom, 27700) geom
-                from local_authority_boundaries lab
-                where lab.lad21cd = '%s'
-            ),
-            footprints as (
-                select fps.geom geom_fp, fps.gid id_fp
-                from footprints_verisk fps, area_of_interest
-                where st_intersects(fps.geom, area_of_interest.geom)
+            with footprints as (
+                select geom_fp, id_fp
+                from "%s" aoi
+                where aoi.id_fp_chunks > %s and aoi.id_fp_chunks <= %s
                 limit %s
             ),
             fp_buffer as (
@@ -294,7 +291,7 @@ def crop_and_fetch_pointclouds_per_building(
             select distinct *
             from building_pc_fp_epc
 
-            """ % (AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS,
+            """ % (AREA_OF_INTEREST_CODE, FP_NUM_START, FP_NUM_END, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS,
                    AREA_OF_INTEREST_CODE, POINT_COUNT_THRESHOLD)
     )
 
@@ -428,7 +425,94 @@ def save_lidar_numpy_list(lidar_numpy_list, gdf, dir_npy):
     return
 
 
-def output_folder_setup(dir_outputs: str, area_of_interest_code: str):
+def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPUT: str, AOI_CODE: str):
+    # saves information required for creating building point clouds except point cloud data itself
+    # footprints
+    gdf_footprints = gpd.GeoDataFrame({"if_fp": gdf.id_fp, "geometry": gdf.geom_fp})
+    gdf_footprints = gdf_footprints.drop_duplicates()
+    save_path = os.path.join(
+        DIR_AOI_OUTPUT, 'footprints', str('footprints_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+    gdf_footprints.to_file(save_path, driver="GeoJSON")
+    # uprn
+    gdf_uprn = gpd.GeoDataFrame({"uprn": gdf.uprn, "geometry": gdf.geom_uprn})
+    gdf_uprn = gdf_uprn.drop_duplicates()
+    save_path = os.path.join(DIR_AOI_OUTPUT, 'uprn', str('uprn_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+    gdf_uprn.to_file(save_path, driver="GeoJSON")
+    # epc label
+    gdf_epc = pd.DataFrame(
+        {"id_epc_lmk_key": gdf.id_epc_lmk_key,
+         "rating": gdf.energy_rating,
+         "efficiency": gdf.energy_efficiency}
+    )
+    gdf_epc = gdf_epc.drop_duplicates()
+    save_path = os.path.join(DIR_AOI_OUTPUT, 'epc', str('epc_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+    gdf_epc.to_json(save_path, orient='records')
+    # label - filename mapping
+    file_names = file_name_from_polygon_list(list(gdf.geom_fp), file_extension='.npy')
+    gdf_mapping = pd.DataFrame(
+        {"id_fp": gdf.id_fp,
+         "uprn": gdf.uprn,
+         "id_id_epc_lmk_key": gdf.id_epc_lmk_key,
+         "id_query": gdf.id_query,
+         "num_p_in_pc": gdf.num_p_in_pc,
+         "epc_rating": gdf.energy_rating,
+         "epc_efficiency": gdf.energy_efficiency,
+         "file_name": file_names}
+    )
+    save_path = os.path.join(DIR_AOI_OUTPUT, 'filename_mapping',
+                             str('label_filename_mapping_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json")
+    )
+    gdf_mapping.to_json(save_path, orient='index')
+    return
+
+
+def case_specific_json_loader(file_path: str, subdir_case: str):
+    if subdir_case == 'footprints' or subdir_case == 'uprn':
+        gdf = gpd.read_file(file_path, driver="GeoJSON")
+    elif subdir_case == 'epc':
+        gdf = pd.read_json(file_path, orient='records')
+    elif subdir_case == 'filename_mapping':
+        gdf = pd.read_json(file_path, orient='index')
+    else:
+        print('this subdirectory case is not considered, yet. check code!')
+    return gdf
+
+
+def case_specific_json_saver(gdf: gpd.GeoDataFrame, file_path: str, subdir_case: str):
+    if subdir_case == 'footprints' or subdir_case == 'uprn':
+        gdf.to_file(file_path, driver="GeoJSON")
+    elif subdir_case == 'epc':
+        gdf.to_json(file_path, orient='records')
+    elif subdir_case == 'filename_mapping':
+        gdf = gdf.reset_index()
+        gdf = gdf.drop("index", axis=1)
+        gdf.to_json(file_path, orient='index')
+    else:
+        print('this subdirectory case is not considered, yet. check code!')
+    return
+
+
+def stitch_raw_input_information(dir_outputs: str, area_of_interest_code: str, SUB_FOLDER_LIST: list):
+    DIR_AOI_OUTPUT = os.path.join(dir_outputs, area_of_interest_code)
+    for subdir in SUB_FOLDER_LIST:
+        if subdir != 'npy_raw':
+            dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
+            jsons_in_dir = [file for file in os.listdir(dir_path) if file[-5:] == '.json']
+            # open jsons and append all data in directory
+            for i, json_in_dir in enumerate(jsons_in_dir):
+                file_path = os.path.join(dir_path, json_in_dir)
+                gdf_snippet = case_specific_json_loader(file_path, subdir)
+                if i == 0:
+                    gdf = gdf_snippet.copy()
+                else:
+                    gdf = gdf.append(gdf_snippet)
+            # save stitched file
+            save_path = os.path.join(DIR_AOI_OUTPUT, str(str(subdir) + '_' + str(area_of_interest_code) + '.json'))
+            case_specific_json_saver(gdf, save_path, subdir)
+    return
+
+
+def output_folder_setup(dir_outputs: str, area_of_interest_code: str, SUB_FOLDER_LIST: list):
     # create area of interest folder
     DIR_AOI_OUTPUT = os.path.join(dir_outputs, area_of_interest_code)
     if os.path.isdir(DIR_AOI_OUTPUT):
@@ -436,8 +520,7 @@ def output_folder_setup(dir_outputs: str, area_of_interest_code: str):
     else:
         os.mkdir(DIR_AOI_OUTPUT)
         # create sub-folders for pointcloud data and meta data
-        directory_list = ['npy_raw', 'footprints', 'uprn', 'epc', 'filename_mapping']
-        for dir in directory_list:
-            dir_path = os.path.join(DIR_AOI_OUTPUT, dir)
+        for subdir in SUB_FOLDER_LIST:
+            dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
             if not os.path.isdir(dir_path): os.mkdir(dir_path)
     return DIR_AOI_OUTPUT
