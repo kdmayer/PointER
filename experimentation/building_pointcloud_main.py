@@ -29,8 +29,9 @@ from pointcloud_functions import \
     output_folder_setup, \
     create_footprints_in_area_materialized_view, \
     save_raw_input_information, \
-    stitch_raw_input_information
-
+    stitch_raw_input_information, \
+    case_specific_json_loader, \
+    production_metrics_simple
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
 from utils.visualization import visualize_single_3d_point_cloud
 from utils.aerial_image import get_aerial_image_lat_lon
@@ -89,14 +90,12 @@ print(res.all())
 print("Starting LAZ to DB", datetime.now().strftime("%H:%M:%S"))
 load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 
-# todo: uncomment
 # # Load EPC data into database
 file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
 df_epc = pd.read_csv(file_path)
 with engine.connect() as con:
     df_epc.to_sql('epc', con=con, if_exists='replace', index=False)
 
-# todo: uncomment
 # Add geoindex to footprint and lidar tables and vacuum table
 print("Starting geoindexing", datetime.now().strftime("%H:%M:%S"))
 db_table_names = [DB_TABLE_NAME_LIDAR, DB_TABLE_NAME_FOOTPRINTS, DB_TABLE_NAME_UPRN, DB_TABLE_NAME_AREA_OF_INTEREST]
@@ -146,6 +145,13 @@ for n_iteration in np.arange(0, num_iterations):
 
 # stitch all raw input information jsons to create one result json
 stitch_raw_input_information(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST)
+
+# calculate simple production metrics for point cloud production in area of interest
+file_path = os.path.join(DIR_AOI_OUTPUT, str('filename_mapping_' + str(AREA_OF_INTEREST_CODE) + '.json'))
+# load mapping geodataframe
+gdf_fm = case_specific_json_loader(file_path, 'filename_mapping')
+# calculate metrics
+production_metrics_simple(gdf_fm, DIR_AOI_OUTPUT, AREA_OF_INTEREST_CODE)
 
 # Visualization for evaluation of results
 # Visualize example building pointcloud data

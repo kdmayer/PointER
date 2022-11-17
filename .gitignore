@@ -40,4 +40,7 @@ assets/uk_lidar_data/*
 assets/uprn/*
 assets/epc/*
 
+outputs/*
+!outputs/example_aoi
+
 venv/*

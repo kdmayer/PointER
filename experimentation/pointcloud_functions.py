@@ -466,29 +466,59 @@ def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPU
     return
 
 
-def case_specific_json_loader(file_path: str, subdir_case: str):
-    if subdir_case == 'footprints' or subdir_case == 'uprn':
+def production_metrics_simple(gdf_fm: gpd.GeoDataFrame, save_path: str, aoi_code: str):
+    # gdf_fm: geodataframe with file mapping information
+    # calculate
+    num_footprints = len(gdf_fm)
+    num_footprints_pcs = len(gdf_fm[gdf_fm.num_p_in_pc.notna()])
+    num_footprints_uprn = len(gdf_fm[gdf_fm.uprn.notna()].uprn.unique())
+    num_footprints_uprn_epc = len(gdf_fm[gdf_fm.epc_efficiency.notna()])
+    num_footprints_full_info = len(gdf_fm.dropna().id_fp.unique())
+    # save to dictionary
+    production_metrics = {
+        'footprints_all': num_footprints,
+        'footprints_w_pointclouds': num_footprints_pcs,
+        'footprints_w_uprn': num_footprints_uprn,
+        'footprints_w_uprn_epc': num_footprints_uprn_epc,
+        'footprints_full_info': num_footprints_full_info
+    }
+    # print information
+    metric_str = ''
+    for metric in production_metrics.keys():
+        relative_metric = str(np.round(production_metrics[metric]/production_metrics['footprints_all']*100, 2))
+        metric_str += str('number of ' + metric + ': ' + str(production_metrics[metric]) +
+                          ' (%s'%relative_metric + ' %) \n')
+    print(metric_str)
+    # save
+    file_path = os.path.join(save_path, str('production_metrics_' + str(aoi_code) +' .json'))
+    with open(file_path, 'w') as f:
+        json.dump(production_metrics, f)
+    return
+
+
+def case_specific_json_loader(file_path: str, case: str):
+    if case == 'footprints' or case == 'uprn':
         gdf = gpd.read_file(file_path, driver="GeoJSON")
-    elif subdir_case == 'epc':
+    elif case == 'epc':
         gdf = pd.read_json(file_path, orient='records')
-    elif subdir_case == 'filename_mapping':
+    elif case == 'filename_mapping':
         gdf = pd.read_json(file_path, orient='index')
     else:
-        print('this subdirectory case is not considered, yet. check code!')
+        print('this case is not considered, yet. check code!')
     return gdf
 
 
-def case_specific_json_saver(gdf: gpd.GeoDataFrame, file_path: str, subdir_case: str):
-    if subdir_case == 'footprints' or subdir_case == 'uprn':
+def case_specific_json_saver(gdf: gpd.GeoDataFrame, file_path: str, case: str):
+    if case == 'footprints' or case == 'uprn':
         gdf.to_file(file_path, driver="GeoJSON")
-    elif subdir_case == 'epc':
+    elif case == 'epc':
         gdf.to_json(file_path, orient='records')
-    elif subdir_case == 'filename_mapping':
+    elif case == 'filename_mapping':
         gdf = gdf.reset_index()
         gdf = gdf.drop("index", axis=1)
         gdf.to_json(file_path, orient='index')
     else:
-        print('this subdirectory case is not considered, yet. check code!')
+        print('this case is not considered, yet. check code!')
     return
 
 
@@ -524,3 +554,6 @@ def output_folder_setup(dir_outputs: str, area_of_interest_code: str, SUB_FOLDER
             dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
             if not os.path.isdir(dir_path): os.mkdir(dir_path)
     return DIR_AOI_OUTPUT
+
+
+
