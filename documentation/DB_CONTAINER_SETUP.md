@@ -196,12 +196,17 @@ While our conda environment is active:
 First, we need to make the data accessible to the VM. 
 A simple way to copy-paste our data in the "share folder" we defined in the Vagrantfile.
 
-Then, we move the data to project folder, so the singularity container can access them 
+Then, we move the data for the database setup to project folder, so the singularity container can access them 
 (not all of the VM's directories are accessible from within singularity):
 
     mv /home/vagrant/data_share/uprn_york.gpkg CS224W_LIDAR/assets/uprn/uprn_york.gpkg 
     mv /home/vagrant/data_share/footprints_verisk_york.gpkg CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
     sudo mv /home/vagrant/data_share/local_authority_boundaries_york.gpkg CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
+    
+We also move 2 files which will be required when running the program to the assets folder (preparation for later)
+
+    mv /home/vagrant/data_share/E08000026.csv CS224W_LIDAR/assets/epc/E08000026.csv 
+    mv /home/vagrant/data_share/SE6053_P_11311_20171109_20171109.laz CS224W_LIDAR/assets/uk_lidar_data/SE6053_P_11311_20171109_20171109.laz
 
 This example works with the provide file snippets for York. Make sure to adapt the filenames to adequately, when running
 the setup with the entire datasets. 

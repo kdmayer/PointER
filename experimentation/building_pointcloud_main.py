@@ -66,6 +66,7 @@ check_directory_paths([DIR_ASSETS, DIR_OUTPUTS, DIR_LAZ_FILES, DIR_VISUALIZATION
 DB_TABLE_NAME_LIDAR = 'uk_lidar_data'
 DB_TABLE_NAME_FOOTPRINTS = 'footprints_verisk'
 DB_TABLE_NAME_UPRN = 'uprn'
+DB_TABLE_NAME_EPC = 'epc'
 DB_TABLE_NAME_AREA_OF_INTEREST = 'local_authority_boundaries'
 
 # Intialize connection to database
@@ -108,7 +109,9 @@ if MAX_NUMBER_OF_FOOTPRINTS == None:
 
 # Create materialized view of footprints in area of interest (required for processing in chunks)
 num_footprints = create_footprints_in_area_materialized_view(
-    DB_CONNECTION_URL, AREA_OF_INTEREST_CODE, MAX_NUMBER_OF_FOOTPRINTS)
+    DB_CONNECTION_URL, AREA_OF_INTEREST_CODE, MAX_NUMBER_OF_FOOTPRINTS, DB_TABLE_NAME_AREA_OF_INTEREST,
+    DB_TABLE_NAME_FOOTPRINTS
+)
 
 # Fetch cropped point clouds from database
 print("Starting point cloud cropping", datetime.now().strftime("%H:%M:%S"))
@@ -121,7 +124,7 @@ for n_iteration in np.arange(0, num_iterations):
     fp_num_end = (n_iteration + 1) * NUM_FOOTPRINTS_CHUNK_SIZE
     gdf = crop_and_fetch_pointclouds_per_building(
         fp_num_start, fp_num_end, AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, MAX_NUMBER_OF_FOOTPRINTS,
-        POINT_COUNT_THRESHOLD, engine
+        POINT_COUNT_THRESHOLD, DB_TABLE_NAME_UPRN, DB_TABLE_NAME_EPC, DB_TABLE_NAME_LIDAR, engine
     )
     # Add floor points to building pointcloud
     print("Floor point adding - chunk %s out of %s - " % (n_iteration, num_iterations),

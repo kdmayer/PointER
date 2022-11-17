@@ -181,7 +181,7 @@ def add_geoindex_to_databases(db_connection_url: str, db_table_name_list: list, 
 
 
 def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS,
-        NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, engine):
+        NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, TABLE_NAME_UPRN, TABLE_NAME_EPC, TABLE_NAME_LIDAR, engine):
     # Fetch cropped point clouds from database
 
     # Query to fetch points within building footprints as multipoint grouped by building.
@@ -218,12 +218,12 @@ def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_IN
             fp_uprn as (
                 select fps.id_fp, fps.geom_fp, u.uprn, (u.geom) geom_uprn
                 from footprints fps 
-                left join uprn u 
+                left join %s u 
                 on st_intersects(fps.geom_fp, u.geom)
             ),
             epc as (
                 select *
-                from epc e
+                from %s e
                 where "LOCAL_AUTHORITY" = '%s'
             ),
             fp_uprn_epc as (
@@ -234,7 +234,7 @@ def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_IN
             ),
             patch_unions as (
                 select fpb.id_fp, pc_union(pc_intersection(pa, fpb.geom_fp)) pau
-                from uk_lidar_data lp
+                from %s lp
                 inner join fp_buffer fpb on pc_intersects(lp.pa, fpb.geom_fp) 
                 group by fpb.id_fp 
             ),
@@ -292,7 +292,7 @@ def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_IN
             from building_pc_fp_epc
 
             """ % (AREA_OF_INTEREST_CODE, FP_NUM_START, FP_NUM_END, NUMBER_OF_FOOTPRINTS, BUILDING_BUFFER_METERS,
-                   AREA_OF_INTEREST_CODE, POINT_COUNT_THRESHOLD)
+                   TABLE_NAME_UPRN, TABLE_NAME_EPC, AREA_OF_INTEREST_CODE, TABLE_NAME_LIDAR, POINT_COUNT_THRESHOLD)
     )
 
     # actual fetching step
@@ -305,7 +305,9 @@ def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_IN
     return gdf
 
 
-def create_footprints_in_area_materialized_view(db_connection_url: str, AREA_OF_INTEREST_CODE: str, NUMBER_OF_FOOTPRINTS: str):
+def create_footprints_in_area_materialized_view(
+        db_connection_url: str, AREA_OF_INTEREST_CODE: str, NUMBER_OF_FOOTPRINTS: str,
+        TABLE_NAME_LOCAL_AUTHORITY_BOUNDARY, TABLE_NAME_FOOTPRINTS):
     sql_query_get_existing_materialized_views = (
         """select matviewname as view_name from pg_matviews where matviewname = '%s'""" % AREA_OF_INTEREST_CODE
     )
@@ -317,19 +319,20 @@ def create_footprints_in_area_materialized_view(db_connection_url: str, AREA_OF_
             create materialized view "%s" as (
                 with area_of_interest as (
                     select st_transform(geom, 27700) geom
-                    from local_authority_boundaries lab
+                    from %s lab
                     where lab.lad21cd = '%s'
                 ),
                 footprints as (
                     select row_number() over (order by fps.gid) as id_fp_chunks, fps.geom geom_fp, fps.gid id_fp
-                    from footprints_verisk fps, area_of_interest
+                    from %s fps, area_of_interest
                     where st_intersects(fps.geom, area_of_interest.geom)
                     limit %s
                 )
                 select *
                 from footprints
             )
-    """ % (AREA_OF_INTEREST_CODE, AREA_OF_INTEREST_CODE, NUMBER_OF_FOOTPRINTS)
+    """ % (AREA_OF_INTEREST_CODE, ABLE_NAME_LOCAL_AUTHORITY_BOUNDARY, AREA_OF_INTEREST_CODE,
+           TABLE_NAME_FOOTPRINTS, NUMBER_OF_FOOTPRINTS)
     )
     sql_query_get_number_of_footprints = (
         """select count(*) from "%s" """ % AREA_OF_INTEREST_CODE
