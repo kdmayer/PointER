@@ -331,7 +331,7 @@ def create_footprints_in_area_materialized_view(
                 select *
                 from footprints
             )
-    """ % (AREA_OF_INTEREST_CODE, ABLE_NAME_LOCAL_AUTHORITY_BOUNDARY, AREA_OF_INTEREST_CODE,
+    """ % (AREA_OF_INTEREST_CODE, TABLE_NAME_LOCAL_AUTHORITY_BOUNDARY, AREA_OF_INTEREST_CODE,
            TABLE_NAME_FOOTPRINTS, NUMBER_OF_FOOTPRINTS)
     )
     sql_query_get_number_of_footprints = (
