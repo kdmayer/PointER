@@ -244,9 +244,15 @@ the setup for other AoIs. Instead of the .gpkg format, .shp files could also be 
 
 See here for a description of input parameters: https://postgis.net/workshops/postgis-intro/loading_data.html
 
-TODO: What happens after I have added the data to the database?
+After loading the data into the database, we can execute 
 
-### Connect PyCharm Interpreter with Singularity Container:
+    experimentation/Building_Pointcloud_Generation.ipynb 
+
+to generate building point clouds for York.
+
+### Notes:
+
+#### Connect PyCharm Interpreter with Singularity Container:
 
 To add the Singularity container as your Python Interpreter in PyCharm [follow these steps](https://www.jetbrains.com/help/pycharm/configuring-remote-interpreters-via-virtual-boxes.html)
 
@@ -271,7 +277,7 @@ And activate our conda environment with
 
 You are all set.
 
-### Run Jupyter Notebook from Vagrant VM:
+#### Run Jupyter Notebook from Vagrant VM:
 
 In your vagrant container with the activated cs224w environment, run
 
@@ -281,21 +287,26 @@ You can then open the vagrant-based jupyter instance by visiting the following U
 
     http://0.0.0.0:8888/tree
 
-### Notes:
 
-Note 1: If you have already created and used the vm-singularity folder for another VM, you will need to destroy the VM and delete the Vagrantfile.
+#### Destroy existing VM
+
+If you have already created and used the vm-singularity folder for another VM, you will need to destroy the VM and delete the Vagrantfile.
 
 From the vm-singularity folder, execute
 
-        vagrant destroy && \
-        rm Vagrantfile
+    vagrant destroy && \
+    rm Vagrantfile
 
-Note 2: If you want to exit a running ssh session in your vagrant vm, simply type
+#### Exit running ssh session
+
+If you want to exit a running ssh session in your vagrant vm, simply type
 
     exit
 
 in the command line interface.
 
-Note 3: If you want to save a table or materialized view as gpkg or shp, you can use:
+#### Save table as .gpkg or .shp
 
-        ogr2ogr -f "GPKG" mynewfilename.gpkg PG:"host=localhost user=vagrant dbname=cs224w_db password=mypassword" "mytablename"
+If you want to save a table or materialized view as .gpkg or .shp, you can use:
+
+    ogr2ogr -f "GPKG" mynewfilename.gpkg PG:"host=localhost user=vagrant dbname=cs224w_db password=mypassword" "mytablename"
