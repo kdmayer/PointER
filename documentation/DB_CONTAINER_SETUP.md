@@ -115,7 +115,7 @@ To conclude, using the postgres shell, we create a new database
     
     CREATE DATABASE cs224w_db;
 
-and quit the postgres database:
+and quit the postgres database
 
     \q
 
@@ -151,7 +151,7 @@ Based on the config_template.py, we adapt the connection parameters.
 Furthermore, we can specify a Google Maps API key, in case we want to download Google aerial images. 
 Then we rename the file to config.py 
 
-    cd CS224W_LIDAR && / 
+    cd CS224W_LIDAR && \ 
     mv config_template.py config.py 
 
 Then, we continue the set-up of the container with
@@ -193,41 +193,39 @@ While our conda environment is active:
   - pointcloud data (.laz): UK National LiDAR Programme: https://www.data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme
     - Open Government Licencse
 
-First, we need to make the data accessible to the VM. 
-A simple way to copy-paste our data in the "share folder" we defined in the Vagrantfile.
+To make the data accessible to our VM, we copy and paste the data into the "data_share" 
+folder specified in the Vagrantfile.
 
-Then, we move the data for the database setup to project folder, so the singularity container can access them 
-(not all of the VM's directories are accessible from within singularity):
+To set up the database, we move the data to the project folder. By moving the data to the project folder, we ensure 
+that the singularity container can access the data. Note that not all of the VM's directories are accessible from within singularity
 
-    mv /home/vagrant/data_share/uprn_york.gpkg CS224W_LIDAR/assets/uprn/uprn_york.gpkg 
-    mv /home/vagrant/data_share/footprints_verisk_york.gpkg CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
-    sudo mv /home/vagrant/data_share/local_authority_boundaries_york.gpkg CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
+    mv /home/vagrant/data_share/uprn_york.gpkg /home/vagrant/CS224W_LIDAR/assets/uprn/uprn_york.gpkg 
+    mv /home/vagrant/data_share/footprints_verisk_york.gpkg /home/vagrant/CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
+    mv /home/vagrant/data_share/local_authority_boundaries_york.gpkg /home/vagrant/CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
     
 We also move 2 files which will be required when running the program to the assets folder (preparation for later)
 
-    mv /home/vagrant/data_share/E08000026.csv CS224W_LIDAR/assets/epc/E08000026.csv 
-    mv /home/vagrant/data_share/SE6053_P_11311_20171109_20171109.laz CS224W_LIDAR/assets/uk_lidar_data/SE6053_P_11311_20171109_20171109.laz
+TODO: Can we clarify this step? The folder contains E06000014.csv instead of E08000026.csv
 
-This example works with the provide file snippets for York. Make sure to adapt the filenames to adequately, when running
-the setup with the entire datasets. 
+    mv /home/vagrant/data_share/E06000014.csv /home/vagrant/CS224W_LIDAR/assets/epc/E06000014.csv 
+    mv /home/vagrant/data_share/SE6053_P_11311_20171109_20171109.laz /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data/SE6053_P_11311_20171109_20171109.laz
+
+As an example, the following commands demonstrate the workflow for York. To run the code for other AoIs, we need to 
+adapt the filenames accordingly.
 
 Connect to singularity shell:
 
     singularity shell -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif 
 
-To insert geopackage data into the database, we need GDALs ogr2ogr function. Therefor we activate the conda environment:
+To insert geopackage data into the database, we need GDALs ogr2ogr function. Therefore, we activate the conda environment:
 
     source /usr/local/etc/profile.d/conda.sh && \
     conda activate cs224w
 
-Using the conda GDAL installation, we insert the geopackage and shp data into our cs224w_db database. 
-The data is some GBs and this process can take 15+ minutes.
+Using the conda GDAL installation, we insert the .gpkg and .shp data into our cs224w_db database. 
+This process can take 15+ minutes.
 
-Make sure, you are in home directory
-    
-    cd
-
-then:
+Make sure, you are in home directory, then:
 
     ogr2ogr -nln uprn -nlt PROMOTE_TO_MULTI -lco GEOMETRY_NAME=geom -lco FID=gid -lco PRECISION=NO \
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
@@ -241,11 +239,12 @@ then:
     -f PostgreSQL "PG:dbname='cs224w_db' host='localhost' port='5432' user='vagrant'" \
     /home/vagrant/CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
 
-This example works with the provide file snippets for York. Make sure to adapt the filenames to adequately, when running
-the setup with the entire datasets. 
-Note, that instead of file format gpkg, .shp files could also be imported with the same command.
+Note: This example works with the provided file snippets for York. Make sure to adapt the filenames when running
+the setup for other AoIs. Instead of the .gpkg format, .shp files could also be imported with the same command.
 
 See here for a description of input parameters: https://postgis.net/workshops/postgis-intro/loading_data.html
+
+TODO: What happens after I have added the data to the database?
 
 ### Connect PyCharm Interpreter with Singularity Container:
 
