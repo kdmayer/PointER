@@ -25,6 +25,7 @@ archive/*
 assets/images/*
 !assets/images/example.png
 !assets/images/Terminal.png
+!assets/images/ssh_interpreter.png
 
 assets/*
 !assets/coventry_building_footprints.geojson
