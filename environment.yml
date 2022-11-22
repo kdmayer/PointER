@@ -8,11 +8,17 @@ dependencies:
   - geopandas=0.8.1
   - pdal=2.4.2
   - python-pdal=3.1.2
-  - laspy==2.2.0
   - pip
-  - jupyter
-  - plotly
-  - tqdm
-  - black
+  - jupyter=1.0.0
+  - plotly=5.10.0
+  - tqdm=4.64.1
+  - black=22.6.0
+  - sqlalchemy=1.4.41
+  - geoalchemy2=0.6.3
+  - psycopg2=2.9.3
+
+  - pip:
+    - laspy[laszip] #find out how to create conda-lock file. required: install conda lock with "E- pip_support", but does not work
+
 
 prefix: /usr/local/anaconda3/envs/cs224w

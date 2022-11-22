@@ -1,14 +1,29 @@
 .idea/
 __pycache__/
+config.py
 *.csv
 .DS_Store
+.env
 
 !environment.yml
 !conda-lock.yml
 
+documentation/*
+!documentation/AOIs.md
+!documentation/TODOs.md
+!documentation/DB_SETUP.md
+!documentation/DB_CONTAINER_SETUP.md
+
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
 !experimentation/Merge_footprint_and_LiDAR_points.ipynb
+!pgpointcloud_main.py
+
+archive/*
+
+assets/images/*
+!assets/images/example.png
+!assets/images/Terminal.png
 
 assets/*
 !assets/coventry_building_footprints.geojson
@@ -17,7 +32,15 @@ assets/*
 !assets/cropped_31.las
 !assets/cropped_41.las
 
-assets/images/*
-!assets/images/example.png
+assets/aerial_image_examples/*
+assets/example_pointclouds/*
+assets/footprints/*
+assets/local_authority_boundaries/*
+assets/uk_lidar_data/*
+assets/uprn/*
+assets/epc/*
 
+outputs/*
+!outputs/example_aoi
 
+venv/*

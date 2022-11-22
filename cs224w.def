@@ -1,0 +1,18 @@
+Bootstrap: docker
+From: pgpointcloud/pointcloud:latest
+
+%post
+    apt-get update && apt-get -y upgrade
+    apt-get install git -y
+    apt-get install wget
+    apt-get install pip -y
+    # Download miniconda
+    wget -c -O miniconda.sh https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    # Install miniconda
+    /bin/bash miniconda.sh -bfp /usr/local
+    rm miniconda.sh
+    conda update conda
+    conda list
+
+%runscript
+    echo "Container was created"
