@@ -279,7 +279,7 @@ You are all set.
 
 #### Run Jupyter Notebook from Vagrant VM:
 
-In your vagrant container with the activated cs224w environment, run
+Option 1: In your vagrant container with the activated cs224w environment, run
 
     jupyter notebook --ip=0.0.0.0
 
@@ -287,6 +287,15 @@ You can then open the vagrant-based jupyter instance by visiting the following U
 
     http://0.0.0.0:8888/tree
 
+Option 2: If the option above doesn't work, try the following:
+
+In the vagrant container, activate your conda environment and run
+
+    jupyter notebook --no-browser --port=YOUR_PORT --ip=0.0.0.0
+
+Now, on your local machine, open a web browser and type this url: 
+
+    http://localhost:YOUR_PORT
 
 #### Destroy existing VM
 
