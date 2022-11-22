@@ -264,7 +264,7 @@ as the python location.
 
 In PyCharm, we can connect to the container by clicking on the downward facing arrow in the terminal menu, and selecting the container
 
-![Terminal Options](https://github.com/kdmayer/CS224W_LIDAR/blob/pg_pointcloud_benchmark/assets/images/Terminal.png)
+![Terminal Options](https://github.com/kdmayer/CS224W_LIDAR/blob/main/assets/images/Terminal.png)
 
 Inside the container, spin up the container shell with 
 
