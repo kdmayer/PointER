@@ -15,7 +15,8 @@ Ideas for new AOIs:
 - Norwich: ~30% missing footprints in north-east part
 - Plymouth: ~30% missing footprints in north-east part
 
-(missing footprints refer to OSM)
+Note: Missing footprints refer to OSM.
+
 ### Google Geocoder API
 
 Costs $5/1000 requests. 
