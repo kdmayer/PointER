@@ -30,5 +30,5 @@ The resulting vagrant-ssh file will look like this
       IdentitiesOnly yes 
       LogLevel FATAL
 
-and contain all the necessary information to connect to your vagrant vm.
+and contain all the necessary information to connect to your vagrant VM.
 

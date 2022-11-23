@@ -9,10 +9,8 @@ import geopandas as gpd
 import pandas as pd
 import numpy as np
 
-
 from geoalchemy2 import Geometry
 from utils.utils import normalize_geom, gdf_geometries_wkb_to_shape, file_name_from_polygon_list
-
 
 def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS):
     # load geojson into gdf

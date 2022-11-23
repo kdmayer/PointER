@@ -79,6 +79,7 @@ Then we expand the virtual volume
 
 
 ### Singularity Setup including pgpointcloud, conda, python environment and project folder
+
 #### Pgpointcloud container with conda 
 In the VM, create an empty container definition file
 
@@ -107,7 +108,7 @@ Then, we execute the database initialization. By binding both directories, we en
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif initdb -E UTF8 --locale=C && \
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif pg_ctl -D /var/lib/postgresql/data -l logfile start
 
-Then, we can connect to the intial postgres database to check if the setup was successful
+Then, we can connect to the initial postgres database to check if the setup was successful
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d postgres
 
@@ -133,7 +134,7 @@ Disconnect from database
 
     \q
 
-For now, the database setup is complete. We will populate our pointcloud database with data later
+For now, the database setup is complete. We will populate our pointcloud database with data later.
 
 #### Project 
 We connect to the singularity container shell with 
