@@ -38,7 +38,7 @@ from utils.aerial_image import get_aerial_image_lat_lon
 
 ######################   Configurations   #####################################
 # Define pointcloud parameters
-AREA_OF_INTEREST_CODE = 'E07000178'  # 'E08000026'  # UK local authority boundary code to specify area of interest (AOI)
+AREA_OF_INTEREST_CODE = 'E06000014'  # 'E07000178', 'E08000026'  # UK local authority boundary code to specify area of interest (AOI)
 BUILDING_BUFFER_METERS = 0.5  # buffer around building footprint in meters
 MAX_NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be created. Use "None" to use all footprints in AOI
 NUM_FOOTPRINTS_CHUNK_SIZE = 500  # number of footprints per query (size of data requires processing in chunks)

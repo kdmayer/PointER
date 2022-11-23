@@ -1,20 +1,16 @@
-import geopandas as gpd
-import numpy as np
-import pandas as pd
-
+import psycopg2
+import shapely
 import json
 import laspy
 import os
 
+import config as config
+import geopandas as gpd
 import pandas as pd
-import pdal
-import psycopg2
-import shapely
+import numpy as np
+
 
 from geoalchemy2 import Geometry
-
-import config as config
-
 from utils.utils import normalize_geom, gdf_geometries_wkb_to_shape, file_name_from_polygon_list
 
 
