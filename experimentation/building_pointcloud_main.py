@@ -3,59 +3,45 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Import python packages
-import os
 import sys
-
-import geopandas as gpd
-import numpy as np
-import pandas as pd
-
 from sqlalchemy import create_engine
 from datetime import datetime
 
-# Add parent folder to path, so that notebook can find .py scripts
-DIR_BASE = os.path.abspath(os.path.join('..'))
-if DIR_BASE not in sys.path:
-    sys.path.append(DIR_BASE)
-
 # Import functions from own .py scripts
-import config
-from pointcloud_functions import \
-    add_geoindex_to_databases, \
-    load_laz_pointcloud_into_database, \
-    add_floor_points_to_points_in_gdf, \
-    crop_and_fetch_pointclouds_per_building, \
-    save_lidar_numpy_list, \
-    output_folder_setup, \
-    create_footprints_in_area_materialized_view, \
-    save_raw_input_information, \
-    stitch_raw_input_information, \
-    case_specific_json_loader, \
-    production_metrics_simple
+from pointcloud_functions import *
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
 from utils.visualization import visualize_single_3d_point_cloud
 from utils.aerial_image import get_aerial_image_lat_lon
 
-######################   Configurations   #####################################
+# Add parent folder to path, so that notebook can find .py scripts
+DIR_BASE = os.path.abspath('..')
+if DIR_BASE not in sys.path:
+    sys.path.append(DIR_BASE)
+
+######################   Configuration   #####################################
 # Define pointcloud parameters
-AREA_OF_INTEREST_CODE = 'E06000014'  # 'E07000178', 'E08000026'  # UK local authority boundary code to specify area of interest (AOI)
-BUILDING_BUFFER_METERS = 0.5  # buffer around building footprint in meters
-MAX_NUMBER_OF_FOOTPRINTS = None  # define how many footprints should be created. Use "None" to use all footprints in AOI
-NUM_FOOTPRINTS_CHUNK_SIZE = 500  # number of footprints per query (size of data requires processing in chunks)
-POINT_COUNT_THRESHOLD = 100  # define minimum points in pointcloud, smaller pointclouds are dismissed
-NUMBER_EXAMPLE_VISUALIZATIONS = 20  # define how many example 3D plots should be created
+# UK local authority boundary code to specify area of interest (AOI)
+AREA_OF_INTEREST_CODE = 'E06000014'
+# buffer around building footprint in meters
+BUILDING_BUFFER_METERS = 0.5
+# define how many footprints should be created. Use "None" to use all footprints in AOI
+MAX_NUMBER_OF_FOOTPRINTS = None
+# number of footprints per query (size of data requires processing in chunks)
+NUM_FOOTPRINTS_CHUNK_SIZE = 500
+# define minimum points in pointcloud, smaller pointclouds are dismissed
+POINT_COUNT_THRESHOLD = 100
+# define how many example 3D plots should be created
+NUMBER_EXAMPLE_VISUALIZATIONS = 20
 
 # Define project base directory and paths
-# DIR_BASE = os.getcwd() # in jupyter, use a different approach (above) to determine project DIR
 DIR_ASSETS = os.path.join(DIR_BASE, 'assets')
-DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
-
 DIR_LAZ_FILES = os.path.join(DIR_ASSETS, "uk_lidar_data")
 DIR_EPC = os.path.join(DIR_ASSETS, "epc")
 DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
 DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
 
 # Create a new output folder for the defined area of interest
+DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
 SUB_FOLDER_LIST = ['npy_raw', 'footprints', 'uprn', 'epc', 'filename_mapping']
 DIR_AOI_OUTPUT = output_folder_setup(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST)
 

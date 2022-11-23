@@ -15,11 +15,11 @@ def check_directory_paths(dir_path_list):
     path_check = True
     for path in dir_path_list:
         if os.path.isdir(path):
-            print("directory '%s' exists" %(str(path)))
+            print(f"directory {str(path)} exists")
         else:
-            print("directory '%s' does NOT exist" %(str(path)))
+            print(f"directory {str(path)} does NOT exist")
             path_check = False
-    return print("all paths exist: " + str(path_check))
+    return print(f"all paths exist: {str(path_check)}")
 
 
 def _convert_numpy_to_las(x: np.ndarray = None, header=None):
