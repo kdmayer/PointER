@@ -14,6 +14,7 @@ documentation/*
 !documentation/DB_SETUP.md
 !documentation/DB_CONTAINER_SETUP.md
 !documentation/Remote_Development.md
+!documentation/Git_Cheat_Sheet.md
 
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
