@@ -13,7 +13,7 @@ documentation/*
 !documentation/TODOs.md
 !documentation/DB_SETUP.md
 !documentation/DB_CONTAINER_SETUP.md
-!documentation/Remote_Debugging.md
+!documentation/Remote_Development.md
 
 experimentation/*
 !experimentation/Point_Cloud_Demo.ipynb
