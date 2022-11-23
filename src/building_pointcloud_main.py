@@ -8,7 +8,7 @@ from sqlalchemy import create_engine
 from datetime import datetime
 
 # Import functions from own .py scripts
-from pointcloud_functions import *
+from src.pointcloud_functions import *
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
 from utils.visualization import visualize_single_3d_point_cloud
 from utils.aerial_image import get_aerial_image_lat_lon
