@@ -21,7 +21,7 @@ if DIR_BASE not in sys.path:
 ######################   Configuration   #####################################
 # Define pointcloud parameters
 # UK local authority boundary code to specify area of interest (AOI)
-AREA_OF_INTEREST_CODE = 'E06000014'
+AREA_OF_INTEREST_CODE = 'E08000026'
 # buffer around building footprint in meters
 BUILDING_BUFFER_METERS = 0.5
 # define how many footprints should be created. Use "None" to use all footprints in AOI
@@ -41,7 +41,7 @@ DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
 DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
 
 # Create a new output folder for the defined area of interest
-DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
+DIR_OUTPUTS = os.path.join('/home/vagrant/data_share', 'outputs')
 SUB_FOLDER_LIST = ['npy_raw', 'footprints', 'uprn', 'epc', 'filename_mapping']
 DIR_AOI_OUTPUT = output_folder_setup(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST)
 
