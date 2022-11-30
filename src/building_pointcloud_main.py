@@ -102,15 +102,23 @@ num_footprints = create_footprints_in_area_materialized_view(
     DB_TABLE_NAME_FOOTPRINTS
 )
 
-# Fetch cropped point clouds from database
 print("Starting point cloud cropping", datetime.now().strftime("%H:%M:%S"))
 # processing the cropping in chunks
 num_iterations = np.ceil(num_footprints / NUM_FOOTPRINTS_CHUNK_SIZE)
+# initialize loop's variables, because they are deleted at beginning of every loop to avoid memory overflow
+gdf = gpd.GeoDataFrame()
+gdf_pc = gpd.GeoDataFrame()
+lidar_numpy_list = []
 for n_iteration in np.arange(0, num_iterations):
+    # delete gdf manually to avoid memory overflow
+    del gdf, gdf_pc, lidar_numpy_list
+
     print("Prcoessing footprints - chunk %s out of %s - " % (n_iteration, num_iterations),
           datetime.now().strftime("%H:%M:%S"))
     fp_num_start = n_iteration * NUM_FOOTPRINTS_CHUNK_SIZE
     fp_num_end = (n_iteration + 1) * NUM_FOOTPRINTS_CHUNK_SIZE
+
+    # Fetch cropped point clouds from database
     gdf = crop_and_fetch_pointclouds_per_building(
         fp_num_start, fp_num_end, AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS, MAX_NUMBER_OF_FOOTPRINTS,
         POINT_COUNT_THRESHOLD, DB_TABLE_NAME_UPRN, DB_TABLE_NAME_EPC, DB_TABLE_NAME_LIDAR, engine
