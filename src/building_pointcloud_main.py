@@ -21,7 +21,7 @@ if DIR_BASE not in sys.path:
 ######################   Configuration   #####################################
 # Define pointcloud parameters
 # UK local authority boundary code to specify area of interest (AOI)
-AREA_OF_INTEREST_CODE = 'E08000026'
+AREA_OF_INTEREST_CODE = 'E06000014'
 # buffer around building footprint in meters
 BUILDING_BUFFER_METERS = 0.5
 # define how many footprints should be created. Use "None" to use all footprints in AOI
