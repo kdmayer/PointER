@@ -32,6 +32,9 @@ NUM_FOOTPRINTS_CHUNK_SIZE = 500
 POINT_COUNT_THRESHOLD = 100
 # define how many example 3D plots should be created
 NUMBER_EXAMPLE_VISUALIZATIONS = 20
+# define if google aerial images should be downloaded for evaluation purposes.
+# Make sure to add a google key in the config file if this is set to True!
+ENABLE_AERIAL_IMAGE_DOWNLOAD = False
 
 # Define project base directory and paths
 DIR_ASSETS = os.path.join(DIR_BASE, 'assets')
@@ -156,24 +159,25 @@ for i, lidar_pc in enumerate(lidar_numpy_list):
         )
 
 # Download aerial image for the building examples
-gdf_fp_lat_lon = gpd.GeoDataFrame(
-    {"id_fp": gdf_pc.id_fp,
-     "geometry": gdf_pc.geom_fp}
-)
-gdf_fp_lat_lon.crs = 27700
-gdf_fp_lat_lon = gdf_fp_lat_lon.to_crs(4326)
+if ENABLE_AERIAL_IMAGE_DOWNLOAD:
+    gdf_fp_lat_lon = gpd.GeoDataFrame(
+        {"id_fp": gdf_pc.id_fp,
+         "geometry": gdf_pc.geom_fp}
+    )
+    gdf_fp_lat_lon.crs = 27700
+    gdf_fp_lat_lon = gdf_fp_lat_lon.to_crs(4326)
 
-img_filenames = file_name_from_polygon_list(list(gdf_fp_lat_lon.geometry), file_extension=".png")
-for i, building in enumerate(gdf_fp_lat_lon.iloc):
-    if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-        cp = building.geometry.centroid
-        get_aerial_image_lat_lon(
-            latitude=cp.y,
-            longitude=cp.x,
-            image_name=img_filenames[i],
-            horizontal_px=512,
-            vertical_px=512,
-            scale=1,
-            zoom=21,
-            save_directory=DIR_AERIAL_IMAGES
-        )
+    img_filenames = file_name_from_polygon_list(list(gdf_fp_lat_lon.geometry), file_extension=".png")
+    for i, building in enumerate(gdf_fp_lat_lon.iloc):
+        if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
+            cp = building.geometry.centroid
+            get_aerial_image_lat_lon(
+                latitude=cp.y,
+                longitude=cp.x,
+                image_name=img_filenames[i],
+                horizontal_px=512,
+                vertical_px=512,
+                scale=1,
+                zoom=21,
+                save_directory=DIR_AERIAL_IMAGES
+            )
