@@ -21,7 +21,7 @@ if DIR_BASE not in sys.path:
 ######################   Configuration   #####################################
 # Define pointcloud parameters
 # UK local authority boundary code to specify area of interest (AOI)
-AREA_OF_INTEREST_CODE = 'E06000014'
+AREA_OF_INTEREST_CODE = 'E08000026'
 # buffer around building footprint in meters
 BUILDING_BUFFER_METERS = 0.5
 # define how many footprints should be created. Use "None" to use all footprints in AOI
@@ -32,6 +32,9 @@ NUM_FOOTPRINTS_CHUNK_SIZE = 500
 POINT_COUNT_THRESHOLD = 100
 # define how many example 3D plots should be created
 NUMBER_EXAMPLE_VISUALIZATIONS = 20
+# define if google aerial images should be downloaded for evaluation purposes.
+# Make sure to add a google key in the config file if this is set to True!
+ENABLE_AERIAL_IMAGE_DOWNLOAD = False
 
 # Define project base directory and paths
 DIR_ASSETS = os.path.join(DIR_BASE, 'assets')
@@ -41,7 +44,7 @@ DIR_VISUALIZATION = os.path.join(DIR_ASSETS, "example_pointclouds")
 DIR_AERIAL_IMAGES = os.path.join(DIR_ASSETS, "aerial_image_examples")
 
 # Create a new output folder for the defined area of interest
-DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
+DIR_OUTPUTS = os.path.join('/home/vagrant/data_share', 'outputs')
 SUB_FOLDER_LIST = ['npy_raw', 'footprints', 'uprn', 'epc', 'filename_mapping']
 DIR_AOI_OUTPUT = output_folder_setup(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST)
 
@@ -156,24 +159,25 @@ for i, lidar_pc in enumerate(lidar_numpy_list):
         )
 
 # Download aerial image for the building examples
-gdf_fp_lat_lon = gpd.GeoDataFrame(
-    {"id_fp": gdf_pc.id_fp,
-     "geometry": gdf_pc.geom_fp}
-)
-gdf_fp_lat_lon.crs = 27700
-gdf_fp_lat_lon = gdf_fp_lat_lon.to_crs(4326)
+if ENABLE_AERIAL_IMAGE_DOWNLOAD:
+    gdf_fp_lat_lon = gpd.GeoDataFrame(
+        {"id_fp": gdf_pc.id_fp,
+         "geometry": gdf_pc.geom_fp}
+    )
+    gdf_fp_lat_lon.crs = 27700
+    gdf_fp_lat_lon = gdf_fp_lat_lon.to_crs(4326)
 
-img_filenames = file_name_from_polygon_list(list(gdf_fp_lat_lon.geometry), file_extension=".png")
-for i, building in enumerate(gdf_fp_lat_lon.iloc):
-    if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-        cp = building.geometry.centroid
-        get_aerial_image_lat_lon(
-            latitude=cp.y,
-            longitude=cp.x,
-            image_name=img_filenames[i],
-            horizontal_px=512,
-            vertical_px=512,
-            scale=1,
-            zoom=21,
-            save_directory=DIR_AERIAL_IMAGES
-        )
+    img_filenames = file_name_from_polygon_list(list(gdf_fp_lat_lon.geometry), file_extension=".png")
+    for i, building in enumerate(gdf_fp_lat_lon.iloc):
+        if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
+            cp = building.geometry.centroid
+            get_aerial_image_lat_lon(
+                latitude=cp.y,
+                longitude=cp.x,
+                image_name=img_filenames[i],
+                horizontal_px=512,
+                vertical_px=512,
+                scale=1,
+                zoom=21,
+                save_directory=DIR_AERIAL_IMAGES
+            )

@@ -466,10 +466,10 @@ def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPU
 def production_metrics_simple(gdf_fm: gpd.GeoDataFrame, save_path: str, aoi_code: str):
     # gdf_fm: geodataframe with file mapping information
     # calculate
-    num_footprints = len(gdf_fm)
-    num_footprints_pcs = len(gdf_fm[gdf_fm.num_p_in_pc.notna()])
-    num_footprints_uprn = len(gdf_fm[gdf_fm.uprn.notna()].uprn.unique())
-    num_footprints_uprn_epc = len(gdf_fm[gdf_fm.epc_efficiency.notna()])
+    num_footprints = len(gdf_fm.id_fp.unique())
+    num_footprints_pcs = len(gdf_fm[gdf_fm.num_p_in_pc.notna()].id_fp.unique())
+    num_footprints_uprn = len(gdf_fm[gdf_fm.uprn.notna()].id_fp.unique())
+    num_footprints_uprn_epc = len(gdf_fm[gdf_fm.epc_efficiency.notna()].id_fp.unique())
     num_footprints_full_info = len(gdf_fm.dropna().id_fp.unique())
     # save to dictionary
     production_metrics = {
@@ -540,6 +540,9 @@ def stitch_raw_input_information(dir_outputs: str, area_of_interest_code: str, S
 
 
 def output_folder_setup(dir_outputs: str, area_of_interest_code: str, SUB_FOLDER_LIST: list):
+    # create outputs folder
+    if not os.path.isdir(dir_outputs):
+        os.mkdir(dir_outputs)
     # create area of interest folder
     DIR_AOI_OUTPUT = os.path.join(dir_outputs, area_of_interest_code)
     if os.path.isdir(DIR_AOI_OUTPUT):
