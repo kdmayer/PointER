@@ -58,6 +58,8 @@ Author: Kevin
 - @Sebastian: Visualize and analyse pointclouds for quality checks and anomaly detection :fire:
 - @Sebastian: Write Nature Data paper and decide on central story thread, i.e., why 3D pointclouds for building energy characteristics :fire:
 --> Exemplary key words for literature review: Height, Age, Architecture, Surface-to-Volume ratio, etc.
+- @Sebastian: Generate final .geojson for each region including the path to pointcloud file and all the epc features :fire:
+--> Can two EPCs end up as the same UPRN?
 - @Kevin: Execute singularity container on Sherlock :fire:
 
 
