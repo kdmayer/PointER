@@ -44,12 +44,22 @@ Author: Kevin
 Date: 14/9/22
 Author: Kevin
 - @All: Determine areas of interest for case study in the UK :+1:
-- @All: Decide on footprint data source: **Verisk** vs OSM (tendency towards Verisk, check license) :fire:
-- @Sebastian: Run pipeline on first set of AOIs and save unnormalized .npz files :fire:
-- @Sebastian: Check geocoding service utilized by TUM :fire:
-- @TBD: Integrate ground points derived from footprint polygons (demo notebook) :fire:
-- @Kevin: Execute and test pg-pointcloud script :fire: 
-- @Kevin: Re-write pg-pointcloud script in an object-oriented fashion :fire: 
+- @All: Decide on footprint data source: **Verisk** vs OSM (tendency towards Verisk, check license) :+1:
+- @Sebastian: Run pipeline on first set of AOIs and save unnormalized .npz files :+1:
+- @Sebastian: Check geocoding service utilized by TUM :+1:
+- @TBD: Integrate ground points derived from footprint polygons (demo notebook) :+1:
+- @Kevin: Execute and test pg-pointcloud script :+1:
+- @Kevin: Re-write pg-pointcloud script in an object-oriented fashion :fire:
+
+---
+Date: 30/11/22
+Author: Kevin
+- @Sebastian: Check why there are so many footprints without associated pointclouds. As an example, Coventry does not generate pointclouds for more than 30% of its footprints :fire:
+- @Sebastian: Visualize and analyse pointclouds for quality checks and anomaly detection :fire:
+- @Sebastian: Write Nature Data paper and decide on central story thread, i.e., why 3D pointclouds for building energy characteristics :fire:
+--> Exemplary key words for literature review: Height, Age, Architecture, Surface-to-Volume ratio, etc.
+- @Kevin: Execute singularity container on Sherlock :fire:
+
 
 Icons:
 
