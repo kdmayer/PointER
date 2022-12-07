@@ -8,6 +8,7 @@ import os
 
 from utils.utils import convert_multipoint_to_numpy
 
+
 def visualize_3d_array(point_cloud_array: np.ndarray = None, file_name_list: List = None, example_ID=None):
     x = point_cloud_array[example_ID, :, 0].flatten()
     y = point_cloud_array[example_ID, :, 1].flatten()
@@ -22,7 +23,7 @@ def visualize_3d_array(point_cloud_array: np.ndarray = None, file_name_list: Lis
 
 
 def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title: str = 'title', save_path: str = None,
-                                    show: bool = False):
+                                    show: bool = False, format: str = 'html'):
     x = point_cloud_array[:, 0].flatten()
     y = point_cloud_array[:, 1].flatten()
     z = point_cloud_array[:, 2].flatten()
@@ -34,8 +35,10 @@ def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title:
 
     if show:
         fig.show()
-
-    fig.write_html(save_path)
+    if format == 'html':
+        fig.write_html(save_path)
+    elif format == 'png':
+        fig.write_image(save_path)
     return
 
 
