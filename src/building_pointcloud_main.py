@@ -3,20 +3,22 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Import python packages
+import os
 import sys
 from sqlalchemy import create_engine
 from datetime import datetime
-
-# Import functions from own .py scripts
-from src.pointcloud_functions import *
-from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
-from utils.visualization import visualize_single_3d_point_cloud
-from utils.aerial_image import get_aerial_image_lat_lon
 
 # Add parent folder to path, so that notebook can find .py scripts
 DIR_BASE = os.path.abspath('..')
 if DIR_BASE not in sys.path:
     sys.path.append(DIR_BASE)
+    
+# Import functions from own .py scripts
+from pointcloud_functions import *
+from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
+from utils.visualization import visualize_single_3d_point_cloud
+from utils.aerial_image import get_aerial_image_lat_lon
+
 
 ######################   Configuration   #####################################
 # Define pointcloud parameters
@@ -35,6 +37,8 @@ NUMBER_EXAMPLE_VISUALIZATIONS = 20
 # define if google aerial images should be downloaded for evaluation purposes.
 # Make sure to add a google key in the config file if this is set to True!
 ENABLE_AERIAL_IMAGE_DOWNLOAD = False
+# Enable starting from a specific iteration. Default: 0. Only adapt if necessary! (e.g. to continue an interrupted run)
+START_ITERATION = 0
 
 # Define project base directory and paths
 DIR_ASSETS = os.path.join(DIR_BASE, 'assets')
@@ -80,7 +84,7 @@ print(res.all())
 print("Starting LAZ to DB", datetime.now().strftime("%H:%M:%S"))
 load_laz_pointcloud_into_database(DIR_LAZ_FILES, DB_TABLE_NAME_LIDAR)
 
-# # Load EPC data into database
+# Load EPC data into database
 file_path = os.path.join(DIR_EPC, AREA_OF_INTEREST_CODE + '.csv')
 df_epc = pd.read_csv(file_path)
 with engine.connect() as con:
@@ -109,7 +113,7 @@ num_iterations = np.ceil(num_footprints / NUM_FOOTPRINTS_CHUNK_SIZE)
 gdf = gpd.GeoDataFrame()
 gdf_pc = gpd.GeoDataFrame()
 lidar_numpy_list = []
-for n_iteration in np.arange(0, num_iterations):
+for n_iteration in np.arange(START_ITERATION, num_iterations):
     # delete gdf manually to avoid memory overflow
     del gdf, gdf_pc, lidar_numpy_list
 

@@ -65,6 +65,9 @@ def gdf_geometries_wkb_to_shape(gdf: gpd.GeoDataFrame = None):
     gdf_geom_uprn = gdf.geom_uprn.apply(WKBElement)
     # convert wkb elements to shapes
     gdf_geom_fp = gdf_geom_fp.apply(to_shape)
+    # if footprints contain no uprn at all, the database query returns None instead of nan - catch this case
+    if gdf.uprn.any() == False:
+        gdf.uprn = np.nan
     # for uprn geom, we need to check, wheter the geom is not nan. we do this by checking if uprn is nan.
     gdf_geom_uprn = gdf[np.isnan(gdf.uprn)==False].geom_uprn.apply(WKBElement)
     gdf_geom_uprn = gdf_geom_uprn.apply(to_shape)
