@@ -18,11 +18,11 @@ from src.pointcloud_functions import case_specific_json_loader
 
 ### PATH DEFINITION
 # # Load output area rural urban classification data into database
-DIR_BASE = os.path.abspath('')
+DIR_BASE = os.path.abspath('..')
 if DIR_BASE not in sys.path:
     sys.path.append(DIR_BASE)
 
-DIR_OUTPUTS = os.path.join(DIR_BASE, '../outputs')
+DIR_OUTPUTS = os.path.join(DIR_BASE, '/outputs')
 DIR_RURAL_URBAN = os.path.join(DIR_BASE, "assets", "rural_urban")
 # categorization of small area geographies into rural and urban classes
 # download data at:
