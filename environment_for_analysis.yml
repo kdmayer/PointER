@@ -1,4 +1,4 @@
-name: cs224w
+name: cs224w_analysis
 
 channels:
   - conda-forge
@@ -26,4 +26,4 @@ dependencies:
     - laspy[laszip] #find out how to create conda-lock file. required: install conda lock with "E- pip_support", but does not work
 
 
-prefix: /usr/local/anaconda3/envs/cs224w
+prefix: /usr/local/anaconda3/envs/cs224w_analysis
