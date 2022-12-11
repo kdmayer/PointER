@@ -426,7 +426,7 @@ def save_lidar_numpy_list(lidar_numpy_list, gdf, dir_npy):
 def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPUT: str, AOI_CODE: str):
     # saves information required for creating building point clouds except point cloud data itself
     # footprints
-    gdf_footprints = gpd.GeoDataFrame({"if_fp": gdf.id_fp, "geometry": gdf.geom_fp})
+    gdf_footprints = gpd.GeoDataFrame({"id_fp": gdf.id_fp, "geometry": gdf.geom_fp})
     gdf_footprints = gdf_footprints.drop_duplicates()
     save_path = os.path.join(
         DIR_AOI_OUTPUT, 'footprints', str('footprints_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
