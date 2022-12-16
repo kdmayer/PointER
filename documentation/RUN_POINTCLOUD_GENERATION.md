@@ -3,10 +3,21 @@
 URL: https://environment.data.gov.uk/DefraDataDownload/?Mode=survey
 1. Select area of interest (AOI) for download (two options)
 
+<!--- Please embed the image into the markdown -->
 a) manually specify AOI as shown in assets/images/manual_selection.png OR 
 
 b) create shapefile of district boundary
 
+<!--- A couple of points here:
+Assuming I have the container up and running and I am in the CS224W_LIDAR directory
+-> Where am I supposed to run this SQL command? 
+-> I assume a database connection needs to be active? Please include the necessary connection command here with a brief description. 
+-> Which files does this SQL command require? Where are these files located and from where have they been downloaded? Please include links and screenshots where necessary.
+-> Where does the name "E06000014" come from? I realize this is based on the EPC codes, but this is not clear at this point. 
+
+Overall: 
+-> Please make sure the procedure is explained step-by-step. The current description still makes too many assumptions on prior knowledge. 
+-->
 Create a materialized view of AOI boundary with this SQL query. 
 Note: simplified geometry is required, because URL does not allow shapes with more than 1000 points.
 
@@ -41,10 +52,12 @@ it contains the OLD LiDAR data with lower resolution.
 After the download, move to the download folder and unzip all LiDAR .zips. The required .laz files will be in sub 
 folders. Move all .laz files to your desired storage location.
 
-
     unzip '*.zip'
 
 ## Download Energy Performance Certificates (EPC) data
+<!--- 
+-> Please embed the image into the markdown
+-->
 URL: https://epc.opendatacommunities.org/
 Download the EPC data. Most of the data is under the Open Government License, but the address information in the tables
 is not under OGL, so an account is required for the download.
@@ -66,7 +79,10 @@ Move the files to the "assets" folder ("assets/uk_lidar_data" and "assets/epc")
     mv /home/vagrant/data_share/E06000014.csv /home/vagrant/CS224W_LIDAR/assets/epc/E06000014.csv 
     mv /home/vagrant/data_share/folder_with_LAZ_files /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data
 
-## Adapt Scipt
+## Adapt Script
+<!--- 
+-> Please embed the image into the markdown
+-->
 Adapt AREA_OF_INTERST_CODE in building_pointcloud_main.py (line 40) to match Local Authority Boundary Code of the 
 downloaded LiDAR data, e.g. "E06000014" for York. (see assets/images/configuration_setting.png)
 Make sure to change only setting "AREA_OF_INTEREST_CODE".
