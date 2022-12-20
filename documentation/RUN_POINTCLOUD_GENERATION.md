@@ -1,25 +1,46 @@
+# General remarks
+The following description explains, how building point clouds for one area of interest (AOI) can be produced.
+While generally any area of interest could be specified, in our case, the use of local authority districts as AOIs is preferred.
+The local authority district boundaries are defined by the government and can be downloaded online.
+In this description, we refer to the local authority district by name, e.g. York, as well as by local authority code (E06000014).
+
+Before you start, make sure you have set up the database container as described in [DB_CONTAINER_SETUP.md](/documentation/DB_CONTAINER_SETUP.md).  
+The description here assumes that you have set up a singularity container with a pgpointcloud database.
+Furthermore, the database should contain building footprints, Unique Property Reference Numbers and 
+Local Authority Distric Boundaries as described in the setup here: 
+[adding data to database](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
+
+The process of running the code for one AOI contains XX steps:
+
+
+
+
 # Prepare LiDAR data
 ## Download and unzip LiDAR tiles
 URL: https://environment.data.gov.uk/DefraDataDownload/?Mode=survey
 1. Select area of interest (AOI) for download (two options)
 
-<!--- Please embed the image into the markdown -->
-a) manually specify AOI as shown in assets/images/manual_selection.png OR 
+a) manually specify AOI as shown OR
 
+![manual selection of AOI](/assets/images/manual_selection.png) 
+  
 b) create shapefile of district boundary
 
-<!--- A couple of points here:
-Assuming I have the container up and running and I am in the CS224W_LIDAR directory
--> Where am I supposed to run this SQL command? 
--> I assume a database connection needs to be active? Please include the necessary connection command here with a brief description. 
--> Which files does this SQL command require? Where are these files located and from where have they been downloaded? Please include links and screenshots where necessary.
--> Where does the name "E06000014" come from? I realize this is based on the EPC codes, but this is not clear at this point. 
+For this, from the vagrant machine, in the CS224W_LIDAR folder,
+first connect to the database in the singularity container: 
 
-Overall: 
--> Please make sure the procedure is explained step-by-step. The current description still makes too many assumptions on prior knowledge. 
--->
-Create a materialized view of AOI boundary with this SQL query. 
-Note: simplified geometry is required, because URL does not allow shapes with more than 1000 points.
+    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
+
+If this fails, the database setting might need to be re-initialized first:
+
+    singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif pg_ctl -D /var/lib/postgresql/data -l logfile start
+
+Then run the psql command again.
+
+Being connected to the database, you can create a materialized view of an AOI boundary with this SQL query: 
+Note: simplified geometry is required, because LiDAR download URL does not allow shapes with more than 1000 points.
+Also note: this command requires that the "local_authority_boundaries" table data has been inserted as described
+[here.](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
 
     create materialized view "E06000014" as (
         select gid, st_simplify(labc.geom, 500) geom, lad21nm
@@ -38,8 +59,9 @@ Zip this folder
     zip assets/local_authority_boundaries/E06000014_boundary_shp.zip assets/local_authority_boundaries/E06000014_boundary_shp/
 
 Then drag and drop the folder to the download page.
-Note: Sometimes, through the simplification in the database query, an erroneous polygon is created. If receive an error
-message after uploading the .zip, visualize the resulted boundary, and try out other simplification parameters, e.g. 
+Note: Sometimes, through the simplification in the database query, an erroneous polygon is created. 
+If you receive an error message after uploading the .zip, visualize the resulted boundary, 
+and try out other simplification parameters, e.g. 
 600 instead of 500.
 
 2. Download .zip folders 
@@ -55,15 +77,15 @@ folders. Move all .laz files to your desired storage location.
     unzip '*.zip'
 
 ## Download Energy Performance Certificates (EPC) data
-<!--- 
--> Please embed the image into the markdown
--->
 URL: https://epc.opendatacommunities.org/
 Download the EPC data. Most of the data is under the Open Government License, but the address information in the tables
 is not under OGL, so an account is required for the download.
-It is possible to download individual EPC data, but we recommend to download the entire dataset. The downloaded data is
-structured into folders according to local authority district (LAD) boundaries, e.g. York - E06000014. 
-(see assets/images/EPC_data_downloaded). In the folders, there is a "certificate.csv" file. Before using the file for a
+It is possible to download individual EPC data, but we recommend to download the entire dataset. 
+The downloaded data is structured into folders according to local authority district (LAD) boundaries, e.g. York - E06000014.
+
+![EPC downloaded](/assets/images/EPC_data_downloaded.png)
+
+In the folders, there is a "certificate.csv" file. Before using the file for a
 region, rename it according to the code, e.g. "E06000014.csv"
 
 ## Upload LAZ files and epc data to vagrant machine
@@ -80,11 +102,11 @@ Move the files to the "assets" folder ("assets/uk_lidar_data" and "assets/epc")
     mv /home/vagrant/data_share/folder_with_LAZ_files /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data
 
 ## Adapt Script
-<!--- 
--> Please embed the image into the markdown
--->
 Adapt AREA_OF_INTERST_CODE in building_pointcloud_main.py (line 40) to match Local Authority Boundary Code of the 
-downloaded LiDAR data, e.g. "E06000014" for York. (see assets/images/configuration_setting.png)
+downloaded LiDAR data, e.g. "E06000014" for York. 
+
+![configuration setting](/assets/images/configuration_setting.png)
+
 Make sure to change only setting "AREA_OF_INTEREST_CODE".
 The other settings affect the resulting point clouds and should be adapted consciously!
 The setting "START_ITERATION" should be 0. 
@@ -111,7 +133,7 @@ and run the program
     
     python3 building_pointcloud_main.py
 
-The majority of time is spent on 3 blocks: 
+The program runs for several hours, whereas the majority of time is spent on 3 blocks: 
 1. Converting .laz to .las and inserting the data in the database
 2. Getting the point clouds in footprints by SQL query (this process chunked)
 3. Adding floor points to the point clouds (this process is chunked)
