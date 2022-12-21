@@ -93,7 +93,7 @@ The downloaded data is structured into folders according to local authority dist
 In the folders, there is a "certificate.csv" file. Before using the file for a
 region, rename it according to the code, e.g. "E06000014.csv"
 
-## Upload LAZ files and epc data to vagrant machine
+## Upload LAZ files and EPC data to vagrant machine
 Move the LiDAR .laz files & the EPC .csv file to the data_share folder, to make them accessible by the vagrant machine.
 Make sure the EPC file is named according to LAD Code (e.g. "E06000014.csv" for York).
 
