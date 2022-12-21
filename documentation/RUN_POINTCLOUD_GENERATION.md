@@ -12,7 +12,7 @@ Local Authority Distric Boundaries as described in the setup here:
 
 The process of running the code for one AOI contains 6 steps:
 
-![img|606x456,65%](/assets/images/overview.png)
+![img](/assets/images/overview.png)
 
 
 # Prepare LiDAR data
