@@ -10,7 +10,7 @@ Furthermore, the database should contain building footprints, Unique Property Re
 Local Authority Distric Boundaries as described in the setup here: 
 [adding data to database](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
 
-The process of running the code for one AOI contains XX steps:
+The process of running the code for one AOI contains 6 steps:
 
 ![overview](/assets/images/overview.png)
 
