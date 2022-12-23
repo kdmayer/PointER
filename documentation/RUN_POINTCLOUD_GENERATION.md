@@ -129,7 +129,10 @@ The setting "START_ITERATION" should be 0.
 It can be used for debugging or to restart the script after interruption.
 
 ## Adapt database
-<!--- From where do we run this command? -->
+<!--- 
+- From where do we run this command? 
+- How do I know which lidar tables exist in the database?
+-->
 Delete or rename the existing "uk_lidar_data" table, because new data is appended.
 
     DROP TABLE uk_lidar_data;
@@ -137,13 +140,14 @@ Delete or rename the existing "uk_lidar_data" table, because new data is appende
 The runtime of the program increases with larger point cloud data size, so it is desirable to reduce the table only 
 relevant point cloud data. Data outside the region of interest slows down the process.  
 
+<!--- What exactly is this command for after deleting the database with the command above? -->
 This can be done in database administration software (DBeaver/pgadmin4) or by connection through console:
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
 
 
 ## Run the code
-Finally, connect to the singularity shell
+Finally, in the vagrant VM, we connect to the singularity shell
     
     singularity shell cs224w.sif
 
