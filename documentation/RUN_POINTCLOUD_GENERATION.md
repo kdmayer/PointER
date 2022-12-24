@@ -154,7 +154,7 @@ After the program ran successfully, the resulting folder should look like this:
 ![result folder](/assets/images/result_folder.png)
 
 **Files:**
-- epc_E0600014.json: EPC data of AOI
+- epc_E0600014.json: EPC efficiency label of buildings in AOI
 - final_E06000014.geojson: final result mapping labels to point cloud filename and footprint polygon
 - footprints_E06000014.geojson: footprint polygon data
 - production_metrics_E06000014.json: a summary of number of footprints in AOI and number of building point clouds produced 
@@ -166,6 +166,6 @@ Please note that the footprint polygon data is removed from the published datase
 
 - The **building point clouds** are stored in .npy format in the **"npy_raw"** folder.
 - All other folders contain data of the .json file with the same name for one of the chunks. 
-  - E.g. "epc_E06000026_0.json" contains the EPC data of the first iteration of the program. 
+  - E.g. "epc_E06000026_0.json" contains the EPC labels of the first iteration of the program. 
   - The chunks' data is stitched together at the end of the iterations.
-  - The "filename_mapping" folder contains the data snippets for the "final_EXXXXXXXX.geojson" result file.
+  - The "filename_mapping" folder contains the data snippets used for the "final_EXXXXXXXX.geojson" result file.
