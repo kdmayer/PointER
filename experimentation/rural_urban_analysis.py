@@ -13,7 +13,6 @@ if DIR_BASE not in sys.path:
 import config
 from src.pointcloud_functions import case_specific_json_loader
 
-
 ### IMPORTANT NOTE:
 # for this program to work, the 2011 UK small output area boundary shapes need to be inserted into database
 # download the data here:
@@ -37,6 +36,7 @@ FILE_RURAL_URBAN = "Rural_Urban_Classification_2011_lookup_tables_for_small_area
 # Intialize connection to database
 DB_CONNECTION_URL = config.DATABASE_URL
 engine = create_engine(DB_CONNECTION_URL, echo=False)
+
 
 def insert_rural_urban_classes_into_db(DIR_BASE, FILE_RURAL_URBAN):
     # # Load output area rural urban classification data into database
@@ -65,23 +65,46 @@ def insert_footprint_ids_of_data_set_into_db(DIR_OUTPUTS):
         if dir != "example_aoi" and dir != '.gitkeep' and dir[-4:] != ".zip":
             FILEPATH_MAPPING = os.path.join(DIR_OUTPUTS, dir, str('filename_mapping_' + dir + '.json'))
             gdf_mapping = case_specific_json_loader(FILEPATH_MAPPING, 'filename_mapping')
+            # get footprint ids in dataset and number of points in their point cloud
             df_append = pd.DataFrame({
                 "id_fp": gdf_mapping.id_fp,
-                "num_p_in_pc":  gdf_mapping.num_p_in_pc
+                "num_p_in_pc": gdf_mapping.num_p_in_pc
             })
+
             print('Adding ' + str(dir) + ' to footprint ids - ' + '\n' +
                   str(len(df_append)) + ' fps' + '\n' +
                   str(len(df_append.drop_duplicates())) + ' unique fp' + '\n' +
                   str(len(df_append.dropna().drop_duplicates())) + ' unique fp with points')
+
+            # drop duplicate information and footprints without enough points
+            df_append = df_append.dropna()
+            df_append = df_append.drop_duplicates()
+
+            # Calculate #UPRN per FP
+            gdf_uprn = pd.DataFrame({
+                "id_fp": gdf_mapping.id_fp,
+                "num_uprn": gdf_mapping.uprn
+            })
+            gdf_uprn = gdf_uprn.groupby('id_fp').count()
+
+            # calculate #EPC per FP
+            gdf_epc = pd.DataFrame({
+                "id_fp": gdf_mapping.id_fp,
+                "num_epc": gdf_mapping.id_id_epc_lmk_key
+            })
+            gdf_epc = gdf_epc.groupby('id_fp').count()
+
+            # add number of EPC and UPRN information to footprint ids
+            df_append = df_append.join(gdf_epc, on='id_fp', how='left')
+            df_append = df_append.join(gdf_uprn, on='id_fp', how='left')
+
             df_fp_ids = df_fp_ids.append(df_append)
             # ids_fp = list(gdf_mapping.id_fp[gdf_mapping.num_p_in_pc.notna()].unique())
             # [id_fp_list.append(i) for i in ids_fp]
 
-    df_fp_ids = df_fp_ids.dropna()
-    df_fp_ids = df_fp_ids.drop_duplicates()
 
     with engine.connect() as con:
-        df_fp_ids.to_sql('footprint_ids_in_data_set', con=con, if_exists='replace', index=False)
+        df_fp_ids.to_sql('footprint_ids_in_data_set_with_epc_uprn', con=con, if_exists='replace', index=False)
 
 
 def run_sql_query(db_connection_url, sql_query):
@@ -165,7 +188,7 @@ def create_table_footprints_w_aoi_rural_urban(db_connection_url):
             )
             select *
             from ruoa_classification_aoi
-            
+
         """
     run_sql_query(db_connection_url, sql_query)
     return
@@ -173,12 +196,12 @@ def create_table_footprints_w_aoi_rural_urban(db_connection_url):
 
 def create_rural_urban_classification_of_footprints_in_data_set(db_connection_url):
     sql_query = """
-        create materialized view ruoa_classification_fps_in_dataset as 
+        create materialized view ruoa_classification_fps_in_dataset_with_epc_uprn as 
         with footprints as (
             select 
                 fv.gid id_fp,
                 fv.geom geom
-            from footprint_ids_in_data_set fiids 
+            from footprint_ids_in_data_set_with_epc_uprn fiids 
             left join footprints_verisk fv on fiids.id_fp=fv.gid 
         ),
         footprints_lad as (
@@ -219,6 +242,7 @@ def analyze_rural_urban_footprints_in_dataset(db_connection_url):
     """
     response = run_sql_query(db_connection_url, sql_query)
     return response
+
 
 # insert footprint ids of database into database
 # insert_footprint_ids_of_data_set_into_db(DIR_OUTPUTS)
