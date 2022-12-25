@@ -5,6 +5,7 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # Import python packages
 import os
 import sys
+import os
 from sqlalchemy import create_engine
 from datetime import datetime
 
@@ -12,13 +13,12 @@ from datetime import datetime
 DIR_BASE = os.path.abspath('..')
 if DIR_BASE not in sys.path:
     sys.path.append(DIR_BASE)
-    
+
 # Import functions from own .py scripts
 from pointcloud_functions import *
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
 from utils.visualization import visualize_single_3d_point_cloud
 from utils.aerial_image import get_aerial_image_lat_lon
-
 
 ######################   Configuration   #####################################
 # Define pointcloud parameters
@@ -37,7 +37,8 @@ NUMBER_EXAMPLE_VISUALIZATIONS = 20
 # define if google aerial images should be downloaded for evaluation purposes.
 # Make sure to add a google key in the config file if this is set to True!
 ENABLE_AERIAL_IMAGE_DOWNLOAD = False
-# Enable starting from a specific iteration. Default: 0. Only adapt if necessary! (e.g. to continue an interrupted run)
+# Enable starting from a specific iteration.
+# Default: 0. Only adapt if necessary! (e.g. to continue an interrupted run)
 START_ITERATION = 0
 
 # Define project base directory and paths
@@ -156,6 +157,9 @@ file_path = os.path.join(DIR_AOI_OUTPUT, str('filename_mapping_' + str(AREA_OF_I
 gdf_fm = case_specific_json_loader(file_path, 'filename_mapping')
 # calculate metrics
 production_metrics_simple(gdf_fm, DIR_AOI_OUTPUT, AREA_OF_INTEREST_CODE)
+# create final result geojson (can take a while)
+print("Creating final result .geojson - this can process can take some minutes")
+generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_public=False)
 
 # Visualization for evaluation of results
 # Visualize example building pointcloud data

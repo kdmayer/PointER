@@ -207,6 +207,7 @@ that the singularity container can access the data. Note that not all of the VM'
 We also move 2 files which will be required when running the program to the assets folder (preparation for later)
 
 TODO: Can we clarify this step? The folder contains E06000014.csv instead of E08000026.csv
+    Response Sebastian: I prepared the example with data from York, so E06000014.csv is the correct file.
 
     mv /home/vagrant/data_share/E06000014.csv /home/vagrant/CS224W_LIDAR/assets/epc/E06000014.csv 
     mv /home/vagrant/data_share/SE6053_P_11311_20171109_20171109.laz /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data/SE6053_P_11311_20171109_20171109.laz

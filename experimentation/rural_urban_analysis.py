@@ -24,7 +24,7 @@ from src.pointcloud_functions import case_specific_json_loader
 # /home/vagrant/CS224W_LIDAR/assets/rural_urban/Output_Areas_\(Dec_2011\)_Boundaries_EW_\(BFC\).shp
 
 ### PATH DEFINITION
-DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
+DIR_OUTPUTS = os.path.join('/home/vagrant/data_share', '/outputs')
 DIR_RURAL_URBAN = os.path.join(DIR_BASE, "assets", "rural_urban")
 # categorization of small area geographies into rural and urban classes
 # download data at:
