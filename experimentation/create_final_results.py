@@ -5,15 +5,15 @@ import sys
 import pandas as pd
 
 # specify paths
-DIR_BASE = os.path.abspath('')
+DIR_BASE = os.path.abspath('..')
 if DIR_BASE not in sys.path:
     sys.path.append(DIR_BASE)
 
 from src.pointcloud_functions import case_specific_json_loader, generate_final_geojson
 
 
-DIR_OUTPUTS = os.path.join(DIR_BASE, '../outputs')
-DIR_EPC = os.path.join(DIR_BASE, '../assets/epc')
+DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
+DIR_EPC = os.path.join(DIR_BASE, 'assets/epc')
 
 DIR_AOIs = os.listdir(DIR_OUTPUTS)
 
