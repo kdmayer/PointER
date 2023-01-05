@@ -47,6 +47,8 @@ if step == 'step_1':
             [npy_filename_list.append(file) for file in npy_files_list]
             [npy_paths_list.append(os.path.join(DIR_NPY, file)) for file in npy_files_list]
 
+    print('gathered all available point clouds filepaths, total of: ' + str(len(npy_filename_list)))
+
     # select a subset of point clouds from all point clouds
     id_list = list(np.arange(0, len(npy_filename_list)))
     id_subsample = random.sample(id_list, sample_size)
@@ -55,6 +57,7 @@ if step == 'step_1':
     npy_path_subsample = [npy_paths_list[id] for id in id_subsample]
 
     # create directory: quality_assessment/entire_subset, /in_doubt, /low_quality
+    print('creating quality_assessment directory and sub directories')
     directory_list = [DIR_SUBSET,
                       DIR_SUBSET_PNGS,
                       DIR_IN_DOUBT,
@@ -62,6 +65,7 @@ if step == 'step_1':
                       DIR_IN_DOUBT_HTMLS,
                       DIR_IN_DOUBT_AERIAL,
                       os.path.join(DIR_QUALITY_ASSESSMENT, 'low_quality')]
+
 
     [os.makedirs(directory, exist_ok=True) for directory in directory_list]
 
@@ -74,6 +78,7 @@ if step == 'step_1':
 
 
     #copy all npys to quality assessment directory
+    print('copying subset point cloud npys to quality assessment directory')
     for i in np.arange(0, sample_size):
         src = npy_path_subsample[i]
         dst = os.path.join(DIR_QUALITY_ASSESSMENT, 'npy_raw_subset', npy_filename_subsample[i])
