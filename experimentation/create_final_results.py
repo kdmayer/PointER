@@ -52,16 +52,19 @@ def rename_files(DIR_OUTPUTS, DIR_AOIs):
 
             # production metrics
             src = os.path.join(DIR_AOI, 'production_metrics_' + AOI + ' .json')
-            dst = os.path.join(DIR_AOI, 'production_metrics_' + AOI + '.json')
-            os.rename(src, dst)
+            if os.path.isfile(src):
+                dst = os.path.join(DIR_AOI, 'production_metrics_' + AOI + '.json')
+                os.rename(src, dst)
 
             # footprint json and uprn json
             src = os.path.join(DIR_AOI, 'footprints_' + AOI + '.json')
-            dst = os.path.join(DIR_AOI, 'footprints_' + AOI + '.geojson')
-            os.rename(src, dst)
+            if os.path.isfile(src):
+                dst = os.path.join(DIR_AOI, 'footprints_' + AOI + '.geojson')
+                os.rename(src, dst)
             src = os.path.join(DIR_AOI, 'uprn_' + AOI + '.json')
-            dst = os.path.join(DIR_AOI, 'uprn_' + AOI + '.geojson')
-            os.rename(src, dst)
+            if os.path.isfile(src):
+                dst = os.path.join(DIR_AOI, 'uprn_' + AOI + '.geojson')
+                os.rename(src, dst)
     return
 
 
