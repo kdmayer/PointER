@@ -25,18 +25,21 @@ def create_final_results_files(DIR_OUTPUTS, DIR_AOIs, is_public):
             print('Creating final results file of: ' + str(AOI))
             DIR_AOI = os.path.join(DIR_OUTPUTS, AOI)
             # get production metrics
-            df_production_metrics = pd.read_json(os.path.join(DIR_AOI, 'production_metrics_' + AOI + ' .json'), orient='index')
-            # make sure that number of point clouds are complete
-            is_enough_pcs = len(os.listdir(os.path.join(DIR_AOI, 'npy_raw'))) \
-                            == df_production_metrics.loc["footprints_w_pointclouds"]
-            print(str(AOI) + ": number of .npy files: " + str(is_enough_pcs))
+            filepath_production_metrics = os.path.join(DIR_AOI, 'production_metrics_' + AOI + ' .json')
+            if not os.path.isfile(filepath_production_metrics):
+                df_production_metrics = pd.read_json(filepath_production_metrics, orient='index')
+                # make sure that number of point clouds are complete
+                is_enough_pcs = len(os.listdir(os.path.join(DIR_AOI, 'npy_raw'))) \
+                                == df_production_metrics.loc["footprints_w_pointclouds"]
+                print(str(AOI) + ": number of .npy files: " + str(is_enough_pcs))
 
             # load filename mapping json
             FILEPATH_MAPPING = os.path.join(DIR_AOI, str('filename_mapping_' + AOI + '.json'))
             gdf_mapping = case_specific_json_loader(FILEPATH_MAPPING, 'filename_mapping')
             # create the geojson with final data
             print("creating final_results.geojson")
-            generate_final_geojson(DIR_EPC, DIR_AOI, AOI, gdf_mapping, is_public)
+            if not os.path.isfile(os.path.join(DIR_OUTPUTS, str("final_" + AOI + ".geojson"))):
+                generate_final_geojson(DIR_EPC, DIR_AOI, AOI, gdf_mapping, is_public)
     return
 
 
