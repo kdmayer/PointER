@@ -85,7 +85,7 @@ if step == 'step_1':
         shutil.copy(src, dst)
 
     # visualize all point clouds of subset as pngs
-    batch_visualization(DIR_SUBSET, DIR_SUBSET_PNGS, format='png')
+    batch_visualization(DIR_SUBSET, DIR_SUBSET_PNGS, status_update=True, format='png')
 
 
 # after manually selecting point clouds in doubt, visualize those in 3D
@@ -103,7 +103,7 @@ elif step == 'step_2':
         shutil.copy(src, dst)
 
     # visualize all point clouds of subset in doubt as html
-    batch_visualization(DIR_IN_DOUBT, DIR_IN_DOUBT_HTMLS, format='html')
+    batch_visualization(DIR_IN_DOUBT, DIR_IN_DOUBT_HTMLS, status_update=True, format='html')
 
     # visualize all point clouds of subset in doubt as aerial image
     seperator_list = [filename.find('_') for filename in filenames_in_doubt]

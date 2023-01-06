@@ -54,12 +54,14 @@ def visualize_example_pointclouds(lidar_numpy_list: list, DIR_VISUALIZATION: str
             )
 
 
-def batch_visualization(DIR_POINT_CLOUDS, DIR_SAVE, format: str='html', number_examples=None):
+def batch_visualization(DIR_POINT_CLOUDS, DIR_SAVE, format: str='html', status_update: bool=False, number_examples=None):
     pc_file_names = os.listdir(DIR_POINT_CLOUDS)
     if number_examples == None:
         number_examples = len(pc_file_names)
     count = 0
     for pc_file_name in pc_file_names:
+        if status_update and count % 100 == 0:
+            print('processing image ' + str(count) + ' out of ' + str(number_examples))
         if count <= number_examples:
             count += 1
             pc_file_path = os.path.join(DIR_POINT_CLOUDS, pc_file_name)
