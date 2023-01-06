@@ -106,5 +106,5 @@ create_final_results_files(DIR_OUTPUTS, DIR_AOIs, is_public=False)
 # rename some files
 rename_files(DIR_OUTPUTS, DIR_AOIs)
 # move non-required data to output_archive folder
-move_list = ['epc']
+move_list = ['filename_mapping', 'uprn', 'footprints']
 move_non_required_data(DIR_BASE, DIR_OUTPUTS, DIR_AOIs, move_list)
