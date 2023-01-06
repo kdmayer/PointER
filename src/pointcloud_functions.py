@@ -429,12 +429,12 @@ def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPU
     gdf_footprints = gpd.GeoDataFrame({"id_fp": gdf.id_fp, "geometry": gdf.geom_fp})
     gdf_footprints = gdf_footprints.drop_duplicates()
     save_path = os.path.join(
-        DIR_AOI_OUTPUT, 'footprints', str('footprints_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+        DIR_AOI_OUTPUT, 'footprints', str('footprints_' + AOI_CODE + '_' + str(int(n_iteration)) + ".geojson"))
     gdf_footprints.to_file(save_path, driver="GeoJSON")
     # uprn
     gdf_uprn = gpd.GeoDataFrame({"uprn": gdf.uprn, "geometry": gdf.geom_uprn})
     gdf_uprn = gdf_uprn.drop_duplicates()
-    save_path = os.path.join(DIR_AOI_OUTPUT, 'uprn', str('uprn_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+    save_path = os.path.join(DIR_AOI_OUTPUT, 'uprn', str('uprn_' + AOI_CODE + '_' + str(int(n_iteration)) + ".geojson"))
     gdf_uprn.to_file(save_path, driver="GeoJSON")
     # epc label
     gdf_epc = pd.DataFrame(
@@ -488,7 +488,7 @@ def production_metrics_simple(gdf_fm: gpd.GeoDataFrame, save_path: str, aoi_code
                           ' (%s'%relative_metric + ' %) \n')
     print(metric_str)
     # save
-    file_path = os.path.join(save_path, str('production_metrics_' + str(aoi_code) +' .json'))
+    file_path = os.path.join(save_path, str('production_metrics_' + str(aoi_code) + '.json'))
     with open(file_path, 'w') as f:
         json.dump(production_metrics, f)
     return
@@ -534,8 +534,12 @@ def stitch_raw_input_information(dir_outputs: str, area_of_interest_code: str, S
                     gdf = gdf_snippet.copy()
                 else:
                     gdf = gdf.append(gdf_snippet)
+            if subdir == 'footprints' or subdir == 'uprn':
+                file_ending = '.geojson'
+            else:
+                file_ending = '.json'
             # save stitched file
-            save_path = os.path.join(DIR_AOI_OUTPUT, str(str(subdir) + '_' + str(area_of_interest_code) + '.json'))
+            save_path = os.path.join(DIR_AOI_OUTPUT, str(str(subdir) + '_' + str(area_of_interest_code) + file_ending))
             case_specific_json_saver(gdf, save_path, subdir)
     return
 
@@ -574,7 +578,7 @@ def generate_final_geojson(DIR_EPC: str, DIR_OUTPUTS: str, AREA_OF_INTEREST_CODE
     gdf_final.insert(0, "id_epc", gdf_final.index)
 
     # add footprint data
-    file_path_footprints = os.path.join(DIR_OUTPUTS, str('footprints_' + AREA_OF_INTEREST_CODE + '.json'))
+    file_path_footprints = os.path.join(DIR_OUTPUTS, str('footprints_' + AREA_OF_INTEREST_CODE + '.geojson'))
     gdf_footprints = case_specific_json_loader(file_path_footprints, 'footprints')
     # correct potential typo in results
     if "if_fp" in gdf_footprints.columns:
