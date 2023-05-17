@@ -65,7 +65,7 @@ def gdf_geometries_wkb_to_shape(gdf: gpd.GeoDataFrame = None):
     gdf_geom_uprn = gdf.geom_uprn.apply(WKBElement)
     # convert wkb elements to shapes
     gdf_geom_fp = gdf_geom_fp.apply(to_shape)
-    # for uprn geom, we need to check, wheter the geom is not nan. we do this by checking if uprn is nan.
+    # for uprn geom, we need to check, whether the geom is not nan. we do this by checking if uprn is nan.
     gdf_geom_uprn = gdf[np.isnan(gdf.uprn)==False].geom_uprn.apply(WKBElement)
     gdf_geom_uprn = gdf_geom_uprn.apply(to_shape)
     # replace fp_geom column with shapes
@@ -126,3 +126,8 @@ def file_name_from_polygon_list(pol_list: list = None, file_extension: str = Non
     return file_names
 
 
+def point_cloud_xyz(point_cloud_array):
+    x = point_cloud_array[:, 0].flatten()
+    y = point_cloud_array[:, 1].flatten()
+    z = point_cloud_array[:, 2].flatten()
+    return x, y, z

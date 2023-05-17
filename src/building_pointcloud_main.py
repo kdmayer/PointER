@@ -22,6 +22,8 @@ if DIR_BASE not in sys.path:
 # Define pointcloud parameters
 # UK local authority boundary code to specify area of interest (AOI)
 AREA_OF_INTEREST_CODE = 'E06000014'
+# create results for publishing or not (due to license) - if False: results contain verisk footprints & epc addresses
+RESULTS_PUBLIC = False
 # buffer around building footprint in meters
 BUILDING_BUFFER_METERS = 0.5
 # define how many footprints should be created. Use "None" to use all footprints in AOI
@@ -154,7 +156,7 @@ gdf_fm = case_specific_json_loader(file_path, 'filename_mapping')
 production_metrics_simple(gdf_fm, DIR_AOI_OUTPUT, AREA_OF_INTEREST_CODE)
 # create final result geojson (can take a while)
 print("Creating final result .geojson - this can process can take some minutes")
-generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_public=False)
+generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_public=RESULTS_PUBLIC)
 
 # Visualization for evaluation of results
 # Visualize example building pointcloud data
