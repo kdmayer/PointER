@@ -20,6 +20,7 @@ dependencies:
   - matplotlib=3.6.2
   - folium=0.13.0
   - branca=0.6.0
+  - contextily=1.3.0
 
   - pip:
     - laspy[laszip] #find out how to create conda-lock file. required: install conda lock with "E- pip_support", but does not work
