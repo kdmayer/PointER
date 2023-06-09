@@ -16,7 +16,7 @@ import config
 
 
 # define directories
-DIR_OUTPUTS = os.path.join("/home/ubuntu/outputs_archive")
+DIR_OUTPUTS = os.path.join(DIR_BASE, 'outputs')
 DIR_AOIs = os.listdir(DIR_OUTPUTS)
 DIR_EPC = os.path.join(DIR_BASE, 'assets', 'epc')
 DIR_FOOTPRINTS = os.path.join(DIR_BASE, 'assets', 'footprints')
