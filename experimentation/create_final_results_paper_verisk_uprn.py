@@ -15,6 +15,17 @@ from src.pointcloud_functions import case_specific_json_loader
 import config
 
 
+# define directories
+DIR_OUTPUTS = os.path.join("/home/ubuntu/outputs_archive")
+DIR_AOIs = os.listdir(DIR_OUTPUTS)
+DIR_EPC = os.path.join(DIR_BASE, 'assets', 'epc')
+DIR_FOOTPRINTS = os.path.join(DIR_BASE, 'assets', 'footprints')
+# select mode
+MODE = "reduced"  # "reduced" subset of epc features or: "full" all epc features
+# define filename of verisk link data
+file_name = "UKBuildings_Edition_13_ABC_link_file.csv"
+
+
 def db_import_epc_all(DIR_EPC, engine):
     EPC_FILENAMES = os.listdir(DIR_EPC)
     for i, epc_filename in enumerate(EPC_FILENAMES):
@@ -139,26 +150,16 @@ def final_results_verisk_uprn(DIR_OUTPUTS, DIR_AOIs, engine, is_public):
     return
 
 
-# define directories
-DIR_OUTPUTS = os.path.join("/home/ubuntu/outputs_archive")
-DIR_AOIs = os.listdir(DIR_OUTPUTS)
-DIR_EPC = os.path.join(DIR_BASE, 'assets', 'epc')
-DIR_FOOTPRINTS = os.path.join(DIR_BASE, 'assets', 'footprints')
-
 # initialize connection to database
 DB_CONNECTION_URL = config.DATABASE_URL
 engine = create_engine(DB_CONNECTION_URL, echo=False)
 
 # 1) insert EPC data of the AOIs of our dataset into database. process will take a lot of time (imports ~15 GB of data)
-# select mode
-MODE = "reduced"  # "reduced" subset of epc features or: "full" all epc features
 db_import_epc_all(DIR_EPC, engine)
 
 # 2) import verisk link data to database. this process will take a lot of time (imports ~3.6 GB of data)
-file_name = "UKBuildings_Edition_13_ABC_link_file.csv"
 verisk_link_filepath = os.path.join(DIR_FOOTPRINTS)
 db_import_verisk_link_data(verisk_link_filepath, engine)
 
 # 3) create final_results.geojson using verisk UPRN link and the full range of EPC features
 final_results_verisk_uprn(DIR_OUTPUTS, DIR_AOIs, engine, is_public=True)
-
