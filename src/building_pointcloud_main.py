@@ -1,5 +1,5 @@
-# todo: remove the surpression of warnings
 import warnings
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Import python packages
@@ -19,7 +19,7 @@ if DIR_BASE not in sys.path:
     sys.path.append(DIR_BASE)
 
 ######################   Configuration   #####################################
-# Define pointcloud parameters
+# Define point cloud parameters
 # UK local authority boundary code to specify area of interest (AOI)
 AREA_OF_INTEREST_CODE = 'E06000014'
 # create results for publishing or not (due to license) - if False: results contain verisk footprints & epc addresses
@@ -30,7 +30,7 @@ BUILDING_BUFFER_METERS = 0.5
 MAX_NUMBER_OF_FOOTPRINTS = None
 # number of footprints per query (size of data requires processing in chunks)
 NUM_FOOTPRINTS_CHUNK_SIZE = 500
-# define minimum points in pointcloud, smaller pointclouds are dismissed
+# define minimum points in point cloud, smaller point clouds are dismissed
 POINT_COUNT_THRESHOLD = 100
 # define how many example 3D plots should be created
 NUMBER_EXAMPLE_VISUALIZATIONS = 20
@@ -60,7 +60,7 @@ DB_TABLE_NAME_UPRN = 'uprn'
 DB_TABLE_NAME_EPC = 'epc'
 DB_TABLE_NAME_AREA_OF_INTEREST = 'local_authority_boundaries'
 
-# Intialize connection to database
+# Initialize connection to database
 DB_CONNECTION_URL = config.DATABASE_URL
 engine = create_engine(DB_CONNECTION_URL, echo=False)
 
@@ -131,7 +131,7 @@ for n_iteration in np.arange(0, num_iterations):
     gdf_pc = gdf[gdf.geom != None].copy()
     gdf_pc = add_floor_points_to_points_in_gdf(gdf_pc)
 
-    # Save raw pointcloud without threshhold or scaling
+    # Save raw point cloud without threshold or scaling
     print("Numpy list creation - chunk %s out of %s - " % (n_iteration, num_iterations),
           datetime.now().strftime("%H:%M:%S"))
     lidar_numpy_list = list(gdf_pc.geom.apply(convert_multipoint_to_numpy))
@@ -150,7 +150,7 @@ stitch_raw_input_information(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST
 
 # calculate simple production metrics for point cloud production in area of interest
 file_path = os.path.join(DIR_AOI_OUTPUT, str('filename_mapping_' + str(AREA_OF_INTEREST_CODE) + '.json'))
-# load mapping geodataframe
+# load mapping GeoDataframe
 gdf_fm = case_specific_json_loader(file_path, 'filename_mapping')
 # calculate metrics
 production_metrics_simple(gdf_fm, DIR_AOI_OUTPUT, AREA_OF_INTEREST_CODE)
@@ -159,7 +159,7 @@ print("Creating final result .geojson - this can process can take some minutes")
 generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_public=RESULTS_PUBLIC)
 
 # Visualization for evaluation of results
-# Visualize example building pointcloud data
+# Visualize example building point cloud data
 pce_file_names = file_name_from_polygon_list(list(gdf_pc.geom_fp), file_extension=".html")
 for i, lidar_pc in enumerate(lidar_numpy_list):
     if i <= NUMBER_EXAMPLE_VISUALIZATIONS:

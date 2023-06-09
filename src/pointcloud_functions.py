@@ -57,27 +57,6 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     laz_file_list = [laz_file for laz_file in laz_files if not laz_file[:-4] + '.las' in las_files]
 
     import_laz_files = laz_file_list
-    #    # check which laz files have not yet been unpacked
-    #    import_history_filename = os.path.join(DIR_LAS_FILES, "laz_import_history_do_not_delete.csv")
-    #    # if no history file exists: use all laz files in directory and create history file
-    #    if not os.path.isfile(import_history_filename):
-    #        print("""no LAZ files have been imported to database so far. if they have, make sure the import history.csv
-    #        is in the LAZ file directory""")
-    #        import_laz_files = laz_file_list.copy()
-    #        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
-    #        df_new_imports.to_csv(import_history_filename)
-    #    # if no history file does exist: select only non imported files and update history file
-    #    elif os.path.isfile(import_history_filename):
-    #        print("Some of the files in the directory have already been imported to DB (see %s). Only non imported files "
-    #              "will be uploaded to database" %import_history_filename)
-
-    #        df_import_history = pd.read_csv(import_history_filename)
-    #        imported_files_list = list(df_import_history['imported_files'])
-    #        import_laz_files = [laz_file for laz_file in laz_file_list
-    #                            if not laz_file in imported_files_list]
-    #        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
-    #        df_import_history.append(df_new_imports)
-    #        df_import_history.to_csv(import_history_filename)
 
     # unzip LAZ files, if corresponding LAS file does not exist
     print('Importing pointcloud data from laz to database. This process can take several minutes')
@@ -214,7 +193,7 @@ def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_IN
     #         "CURRENT_ENERGY_EFFICIENCY" energy_efficiency : epc efficiency value, from epc database
 
     # query is dynamically adapted by the number of requested footprints (num_footprints) as well as the sample size
-    # of the pointclouds (POINT_COUNT_THRESHOLD)
+    # of the point clouds (POINT_COUNT_THRESHOLD)
 
     sql_query_grouped_points = (
             """
@@ -365,9 +344,9 @@ def create_footprints_in_area_materialized_view(
     # drop existing materialized view
     if len(existing_view) == 1:
         cursor.execute(sql_query_drop_existing_materialized_view)
-    # create new materialized view with footpints in aera of interest
+    # create new materialized view with footprints in area of interest
     cursor.execute(sql_query_footprint_materialzed_view)
-    # get number of footprints in aera of interest
+    # get number of footprints in area of interest
     cursor.execute(sql_query_get_number_of_footprints)
     num_footprints = cursor.fetchall()[0][0]
     # commit the transaction
@@ -487,7 +466,7 @@ def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPU
 
 
 def production_metrics_simple(gdf_fm: gpd.GeoDataFrame, save_path: str, aoi_code: str):
-    # gdf_fm: geodataframe with file mapping information
+    # gdf_fm: GeoDataframe with file mapping information
     # calculate
     num_footprints = len(gdf_fm.id_fp.unique())
     num_footprints_pcs = len(gdf_fm[gdf_fm.num_p_in_pc.notna()].id_fp.unique())
@@ -576,7 +555,7 @@ def output_folder_setup(dir_outputs: str, area_of_interest_code: str, SUB_FOLDER
         print('output for this area of interest already exists. delete or choose other area code')
     else:
         os.mkdir(DIR_AOI_OUTPUT)
-        # create sub-folders for pointcloud data and meta data
+        # create sub-folders for point cloud data and meta data
         for subdir in SUB_FOLDER_LIST:
             dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
             if not os.path.isdir(dir_path): os.mkdir(dir_path)

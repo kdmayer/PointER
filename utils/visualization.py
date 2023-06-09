@@ -398,6 +398,7 @@ def visualize_footprints_with_buffer(gdf_footprints, save_path, section_size=150
     fig.savefig(save_path, format=save_path[-3:], dpi=300)
     return
 
+
 def visualize_points_in_footprint(gdf_lidar_points, gdf_fp_p_in_pc, save_path, section_size=150, include_legend=True):
     # define font
     plt.rcParams["font.family"] = "Calibri"
