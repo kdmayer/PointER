@@ -222,7 +222,11 @@ To make the data accessible to our VM, we copy and paste the data into the "data
 folder specified in the Vagrantfile.
 
 To set up the database, we move the data to the project folder. By moving the data to the project folder, we ensure 
-that the singularity container can access the data. Note that not all of the VM's directories are accessible from within singularity
+that the singularity container can access the data. 
+Note that not all of the VM's directories are accessible from within singularity.
+
+Note that the following commands work for example files of York. 
+The filenames need to be adapted when working with the full datasets.
 
     mv /home/vagrant/data_share/uprn_york.gpkg /home/vagrant/CS224W_LIDAR/assets/uprn/uprn_york.gpkg 
     mv /home/vagrant/data_share/footprints_verisk_york.gpkg /home/vagrant/CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
@@ -275,7 +279,7 @@ Make sure to be in the CS224W_LIDAR folder when running the notebook.
 
 to generate building point clouds for York.
 
-To generate building point clouds for entire York or other AOIs, please see the detailed description:
+To generate building point clouds for the entire AOI of York or other AOIs, please see the detailed description:
 
     documentation/RUN_POINTCLOUD_GENERATION.md
 
