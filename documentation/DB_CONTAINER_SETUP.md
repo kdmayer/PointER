@@ -28,7 +28,9 @@ Specify the desired disk size in the Vagrantfile
 
         config.disksize.size = '150GB'
 
-To provide enough working memory for the large LAZ point cloud files, we need to change the memory to 4 GB, the more the better.
+To provide enough working memory for the large LAZ point cloud files, we need to change the memory.
+We ran the process with 48 GB of RAM. 
+The provided example works with 4 GB of RAM, but usually, the point clouds are larger and will require more memory.
       
     config.vm.provider "virtualbox" do |vb|
       #   # Customize the amount of memory on the VM:

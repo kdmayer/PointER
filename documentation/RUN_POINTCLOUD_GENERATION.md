@@ -209,8 +209,8 @@ and run the program
 
 The program runs for several hours. The majority of time is spent on 3 blocks: 
 1. Converting .laz to .las and inserting the data in the database
-2. Getting the point clouds in footprints by SQL query (this process chunked)
-3. Adding floor points to the point clouds (this process is chunked)
+2. Getting the point clouds in footprints by SQL query (this process runs in iterations)
+3. Adding floor points to the point clouds (this process runs in iterations)
 The results are saved in every loop, so the program could be restarted after interruption  
 
 
@@ -231,7 +231,7 @@ Please note that the footprint polygon data is removed from the published datase
 **Folders:**
 
 - The **building point clouds** are stored in .npy format in the **"npy_raw"** folder.
-- All other folders contain data of the .json file with the same name for one of the chunks. 
+- All other folders contain data of the .json file with the same name. One for each iteration. 
   - E.g. "epc_E06000026_0.json" contains the EPC labels of the first iteration of the program. 
-  - The chunks' data is stitched together at the end of the iterations.
+  - The iteration's data is stitched together at the end.
   - The "filename_mapping" folder contains the data snippets used for the "final_EXXXXXXXX.geojson" result file.
