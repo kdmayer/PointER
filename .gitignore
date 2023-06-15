@@ -15,6 +15,7 @@ documentation/*
 !documentation/DB_CONTAINER_SETUP.md
 !documentation/Remote_Development.md
 !documentation/Git_Cheat_Sheet.md
+!documentation/Singularity_On_Cluster.md
 
 experimentation/*
 !archive/Point_Cloud_Demo.ipynb

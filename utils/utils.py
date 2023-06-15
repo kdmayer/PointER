@@ -131,3 +131,4 @@ def point_cloud_xyz(point_cloud_array):
     y = point_cloud_array[:, 1].flatten()
     z = point_cloud_array[:, 2].flatten()
     return x, y, z
+

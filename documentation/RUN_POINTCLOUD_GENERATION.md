@@ -53,8 +53,9 @@ If the materialized view already exists, this command will fail.
         where labc.lad21cd='E06000014'
     );
 
-Note: simplified geometry is required, because LiDAR download URL does not allow shapes with more than 1000 points.
+Note: simplified geometry is required, because LiDAR download URL does not allow shapes with more than 1000 points. 
 [see LiDAR URL](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
+
 
 You can test if the query was successful by querying the gid of the boundary
 
@@ -89,7 +90,7 @@ To zip this folder, first exit the singularity shell to go back to the vagrant m
 Then run
 
     zip -r CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp.zip \
-    CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp/
+        CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp/
 
 Note: If zip is not installed, first install zip:
 
@@ -121,6 +122,8 @@ used to visualize which tiles are included, but then the download area needs to 
 **3. Unzip the downloaded .zip folders**
 After the download, move to your download folder and unzip all LiDAR .zips. You will find the .laz files in one or 
 multiple sub-folders.
+After the download, move to the download folder and unzip all LiDAR .zips. The required .laz files will be in sub 
+folders.
 
     unzip '*.zip'
 
@@ -145,8 +148,9 @@ Make sure the EPC file is named according to LAD Code (e.g. "E06000014.csv" for 
 
 Optional: Delete existing data in "assets/uk_lidar_data" on the vagrant machine - to save storage space
 Note: All pre-existing files from prior files exist in two versions: the downloaded .laz and the corresponding unpacked 
-.las file. When running the program, all files that have already been unpacked are skipped and only "new" unpacked files
+.las file. When running the program, all files that have already been unpacked are skipped and only "new" unpacked files 
 are inserted into the database. So the program also skips previously existing and already unpacked files, even if they  are not deleted. 
+
 
 In the vagrant VM, move the files to the "assets" folder ("assets/uk_lidar_data" and "assets/epc")
     

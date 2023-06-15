@@ -1,3 +1,4 @@
+import pdal
 import psycopg2
 import shapely
 import json
@@ -579,7 +580,9 @@ def generate_final_geojson(DIR_EPC: str, DIR_OUTPUTS: str, AREA_OF_INTEREST_CODE
     gdf_final.insert(0, "id_epc", gdf_final.index)
 
     # add footprint data
+
     file_path_footprints = os.path.join(DIR_OUTPUTS, str('footprints_' + AREA_OF_INTEREST_CODE + '.geojson'))
+
     gdf_footprints = case_specific_json_loader(file_path_footprints, 'footprints')
     # correct potential typo in results
     if "if_fp" in gdf_footprints.columns:
@@ -593,7 +596,7 @@ def generate_final_geojson(DIR_EPC: str, DIR_OUTPUTS: str, AREA_OF_INTEREST_CODE
     gdf_final.index = gdf_final.index.rename("index")
 
     # save final result geojson
-    file_path = os.path.join(DIR_OUTPUTS, str("final_" + AREA_OF_INTEREST_CODE + ".geojson"))
+    file_path = os.path.join(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, str("final_" + AREA_OF_INTEREST_CODE + ".geojson"))
     gdf_final.to_file(file_path, driver="GeoJSON")
 
     return
