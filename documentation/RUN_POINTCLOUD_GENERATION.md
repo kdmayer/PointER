@@ -175,7 +175,7 @@ Delete or rename the existing "uk_lidar_data" table, because new data is appende
 The runtime of the program increases with larger point cloud data size, so it is desirable to reduce the table only 
 relevant point cloud data. Data outside the region of interest slows down the process.  
 
-To delete the existing table, connect to the database (similar to the step # Prepare LiDAR data)
+To delete the existing table, connect to the database.
 On the vagrant machine, in the home folder /home/vagrant, run 
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
@@ -207,7 +207,7 @@ and run the program
     
     python3 building_pointcloud_main.py
 
-The program runs for several hours, whereas the majority of time is spent on 3 blocks: 
+The program runs for several hours. The majority of time is spent on 3 blocks: 
 1. Converting .laz to .las and inserting the data in the database
 2. Getting the point clouds in footprints by SQL query (this process chunked)
 3. Adding floor points to the point clouds (this process is chunked)
