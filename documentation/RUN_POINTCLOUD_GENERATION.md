@@ -7,7 +7,7 @@ In this description, we refer to the local authority district by name, e.g. York
 Before you start, make sure you have set up the database container as described in [DB_CONTAINER_SETUP.md](/documentation/DB_CONTAINER_SETUP.md).  
 The description here assumes that you have set up a singularity container with a pgpointcloud database.
 Furthermore, the database should contain building footprints, Unique Property Reference Numbers and 
-Local Authority Distric Boundaries as described in the setup here: 
+Local Authority District Boundaries as described in the setup here: 
 [adding data to database](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
 
 The process of running the code for one AOI contains 6 steps:
@@ -27,10 +27,7 @@ a) manually specify AOI as shown OR
   
 b) create shapefile of district boundary
 
-<!--- 
-- This does not work, you have to be in the /home/vagrant directory to execute this command.
-- We should also briefly state that the local authority code has to be adapted. -->
-For this, from the vagrant machine, in the CS224W_LIDAR folder,
+For this, from the vagrant machine, in the /home/vagrant folder,
 first connect to the database in the singularity container: 
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
@@ -41,31 +38,70 @@ If this fails, the database setting might need to be re-initialized first:
 
 Then run the first psql command again.
 
-Being connected to the database, you can create a materialized view of an AOI boundary with this SQL query: 
+You will see that you are connected to the database in the terminal when the command line reads "cs224w_db=#"
 
-Note: simplified geometry is required, because LiDAR download URL does not allow shapes with more than 1000 points.
-Also note: this command requires that the "local_authority_boundaries" table data has been inserted as described
-[here.](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
+Being connected, you can create a materialized view of an AOI boundary with this SQL query:
 
-    create materialized view "E06000014" as (
+Note: This command requires that the "local_authority_boundaries" table data has been inserted as described
+
+Note: The AOI Code "E06000014" is for the example of York and needs to be adapted for new AOIs respectively. 
+If the materialized view already exists, this command will fail. 
+
+    create materialized view "E06000014_boundary" as (
         select gid, st_simplify(labc.geom, 500) geom, lad21nm
         from local_authority_boundaries labc
         where labc.lad21cd='E06000014'
-    )
+    );
 
-Then, export this materialized view to a shape file with this command.
-<!--- This does not work. The "\" is not recognized by psql. After removing it, the program still fails. -->
+Note: simplified geometry is required, because LiDAR download URL does not allow shapes with more than 1000 points.
+[see LiDAR URL](https://github.com/kdmayer/CS224W_LIDAR/blob/main/documentation/DB_CONTAINER_SETUP.md#add-data-to-database-footprints-unique-property-reference-numbers-and-local-authority-boundary)
 
-    ogr2ogr -f "ESRI Shapefile" assets/local_authority_boundaries/E06000014_boundary_shp \
-    PG:"dbname=cs224w_db host=localhost port=5432 user=vagrant" E06000014
+You can test if the query was successful by querying the gid of the boundary
 
-The command creates a folder "E06000014_boundary_shp" in assets/local_authority_boundaries and creates shapefiles there.
-Zip this folder
+     select gid from "E06000014_boundary";
 
-<!--- This does not work. The directory is not created. -->
-    zip assets/local_authority_boundaries/E06000014_boundary_shp.zip assets/local_authority_boundaries/E06000014_boundary_shp/
+Next, export this materialized view to a shape file.
+To do this, exit the database with 
 
-Then drag and drop the folder to the download page.
+    \q
+
+Connect to the singularity container 
+
+    singularity shell cs224w.sif
+
+and activate the conda environment:
+
+    source /usr/local/etc/profile.d/conda.sh && \
+        conda activate cs224w
+
+Then use the ogr2ogr program contained in the GDAL library to export the shape from the database
+ 
+    ogr2ogr -f "ESRI Shapefile" CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp \
+    PG:"dbname=cs224w_db host=localhost port=5432 user=vagrant" E06000014_boundary
+
+The command creates a folder "E06000014_boundary_shp" in CS224W_LIDAR/assets/local_authority_boundaries and 
+creates shapefiles there.
+
+To zip this folder, first exit the singularity shell to go back to the vagrant machine to the home\vagrant\
+
+    exit
+
+Then run
+
+    zip -r CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp.zip \
+    CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp/
+
+Note: If zip is not installed, first install zip:
+
+    sudo apt install zip
+
+Make zipped folder available to your computer by moving it to the data_share folder.
+
+    mv CS224W_LIDAR/assets/local_authority_boundaries/E06000014_boundary_shp.zip \
+    /home/vagrant/data_share/E06000014_boundary_shp.zip
+
+You can then use this .zip file to download the LiDAR tiles in the boundary.
+To do this, drag and drop the folder to the download page (https://environment.data.gov.uk/DefraDataDownload/?Mode=survey)
 
 Note: Sometimes, through the simplification in the database query, an erroneous polygon is created. 
 If you receive an error message after uploading the .zip, visualize the resulted boundary, 
@@ -73,16 +109,18 @@ and try out other simplification parameters, e.g. 600 instead of 500.
 
 **2. Download .zip folders**
 
-After marking the AOI, click on "Get available Tiles", then select "National LiDAR Programme Point Cloud", and download 
-all LiDAR tiles for all available years, e.g. "2019" and "2020". Data should be from 2017 or newer.
+After marking the AOI, click on "Get available Tiles", then select "**National LiDAR Programme Point Cloud**", and download 
+**all** LiDAR tiles for all available years, e.g. "2019" and "2020". Data should be from 2017 or newer. Resolution should be 1m.
 
-Note: Resolution should be 1m. There is also a data type "LiDAR Point Cloud". Make sure NOT to select this one, because 
+Note: There is also a data type "LiDAR Point Cloud". Make sure NOT to select this one, because 
 it contains the OLD LiDAR data with lower resolution. 
 
-**3. Unzip the downloaded .zip folders**
+Note: For very large AOIs, it might be necessary to split the download into 2-3 sessions. The uploaded boundary can be 
+used to visualize which tiles are included, but then the download area needs to be selected manually. 
 
-After the download, move to the download folder and unzip all LiDAR .zips. The required .laz files will be in sub 
-folders. Move all .laz files to your desired storage location.
+**3. Unzip the downloaded .zip folders**
+After the download, move to your download folder and unzip all LiDAR .zips. You will find the .laz files in one or 
+multiple sub-folders.
 
     unzip '*.zip'
 
@@ -97,23 +135,23 @@ The downloaded data is structured into folders according to local authority dist
 
 ![EPC downloaded](/assets/images/EPC_data_downloaded.png)
 
-In the folders, there is a "certificate.csv" file. Before using the file for a
-region, rename it according to the code, e.g. "E06000014.csv"
+In the folders, there are "certificate.csv" files. Before using a file for a
+region, rename it according to the local authority district code, e.g. "E06000014.csv". 
+This way, the files won't be confused later on. 
 
 ## Upload LAZ files and EPC data to vagrant machine
 Move the LiDAR .laz files & the EPC .csv file to the data_share folder, to make them accessible by the vagrant machine.
 Make sure the EPC file is named according to LAD Code (e.g. "E06000014.csv" for York).
 
 Optional: Delete existing data in "assets/uk_lidar_data" on the vagrant machine - to save storage space
-
-<!--- Unclear. We download the lidar point clouds in .laz format. Please elaborate on this sentence. -->
-Note: All existing files should exist as .laz as well as .las, and the program only inserts .laz files to the database 
-if the corresponding .las does not exist, so the program should work anyway, if this step is skipped.
+Note: All pre-existing files from prior files exist in two versions: the downloaded .laz and the corresponding unpacked 
+.las file. When running the program, all files that have already been unpacked are skipped and only "new" unpacked files
+are inserted into the database. So the program also skips previously existing and already unpacked files, even if they  are not deleted. 
 
 In the vagrant VM, move the files to the "assets" folder ("assets/uk_lidar_data" and "assets/epc")
     
     mv /home/vagrant/data_share/E06000014.csv /home/vagrant/CS224W_LIDAR/assets/epc/E06000014.csv 
-    mv /home/vagrant/data_share/folder_with_LAZ_files /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data
+    mv /home/vagrant/data_share/folder_with_LAZ_files/* /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data
 
 ## Adapt Script
 Adapt AREA_OF_INTERST_CODE in building_pointcloud_main.py (line 26) to match Local Authority Boundary Code of the 
@@ -124,32 +162,42 @@ downloaded LiDAR data, e.g. "E06000014" for York.
 Make sure to change only setting "AREA_OF_INTEREST_CODE".
 The other settings affect the resulting point clouds and should be adapted consciously!
 
-<!--- Where is this setting. -->
 The setting "START_ITERATION" should be 0. 
 It can be used for debugging or to restart the script after interruption.
 
 ## Adapt database
-<!--- 
-- From where do we run this command? 
-- How do I know which lidar tables exist in the database?
--->
 Delete or rename the existing "uk_lidar_data" table, because new data is appended.
-
-    DROP TABLE uk_lidar_data;
 
 The runtime of the program increases with larger point cloud data size, so it is desirable to reduce the table only 
 relevant point cloud data. Data outside the region of interest slows down the process.  
 
-<!--- What exactly is this command for after deleting the database with the command above? -->
-This can be done in database administration software (DBeaver/pgadmin4) or by connection through console:
+To delete the existing table, connect to the database (similar to the step # Prepare LiDAR data)
+On the vagrant machine, in the home folder /home/vagrant, run 
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
 
+You should see "cs224w_db=#" in the terminal
+
+    DROP TABLE uk_lidar_data;
+
+The query is confirmed by "DROP TABLE" when successful
+Then disconnect from the database:
+
+    \q
 
 ## Run the code
 Finally, in the vagrant VM, we connect to the singularity shell
-    
+
     singularity shell cs224w.sif
+
+and activate the conda environment:
+
+    source /usr/local/etc/profile.d/conda.sh && \
+        conda activate cs224w
+
+change the directory to "src"
+
+    cd CS224W_LIDAR/src
 
 and run the program 
     
