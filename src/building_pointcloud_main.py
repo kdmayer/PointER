@@ -1,9 +1,7 @@
 import warnings
-
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Import python packages
-import os
 import sys
 import os
 from sqlalchemy import create_engine

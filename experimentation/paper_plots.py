@@ -11,6 +11,7 @@ if DIR_BASE not in sys.path:
     sys.path.append(DIR_BASE)
 
 from utils.visualization import *
+from utils.visualization_paper import *
 from src.pointcloud_functions import case_specific_json_loader
 import config
 
