@@ -6,6 +6,7 @@ import sys
 import os
 from sqlalchemy import create_engine
 from datetime import datetime
+from shapely.geometry import Point
 
 # Add parent folder to path, so that notebook can find .py scripts
 DIR_BASE = os.path.abspath('..')
@@ -169,17 +170,22 @@ batch_visualization(DIR_POINT_CLOUDS, DIR_VISUALIZATION,
 
 # Download aerial image for the building examples
 if ENABLE_AERIAL_IMAGE_DOWNLOAD:
-    gdf_fp_lat_lon = gpd.GeoDataFrame(
-        {"id_fp": gdf_pc.id_fp,
-         "geometry": gdf_pc.geom_fp}
-    )
-    gdf_fp_lat_lon.crs = 27700
-    gdf_fp_lat_lon = gdf_fp_lat_lon.to_crs(4326)
+    pc_file_names = os.listdir(DIR_POINT_CLOUDS)
+    pc_file_names = pc_file_names[:NUMBER_EXAMPLE_VISUALIZATIONS]
+    pc_file_names = [fn[:-4] for fn in pc_file_names]
+    center_point_list = [Point(float(fn[0:fn.find("_"):]), float(fn[fn.find("_") + 1:])) for fn in pc_file_names]
 
-    img_filenames = file_name_from_polygon_list(list(gdf_fp_lat_lon.geometry), file_extension=".png")
-    for i, building in enumerate(gdf_fp_lat_lon.iloc):
+    gdf_center_points_lat_lon = gpd.GeoDataFrame(
+        {"geometry": center_point_list}
+    )
+    gdf_center_points_lat_lon.crs = 27700
+    gdf_center_points_lat_lon = gdf_center_points_lat_lon.to_crs(4326)
+
+    img_filenames = [fn + '.png' for fn in pc_file_names]
+
+    for i, building in enumerate(gdf_center_points_lat_lon.iloc):
         if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-            cp = building.geometry.centroid
+            cp = building.geometry
             get_aerial_image_lat_lon(
                 latitude=cp.y,
                 longitude=cp.x,
