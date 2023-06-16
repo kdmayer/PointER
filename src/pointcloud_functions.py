@@ -527,7 +527,7 @@ def stitch_raw_input_information(dir_outputs: str, area_of_interest_code: str, S
     for subdir in SUB_FOLDER_LIST:
         if subdir != 'npy_raw':
             dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
-            jsons_in_dir = [file for file in os.listdir(dir_path) if file[-5:] == '.json']
+            jsons_in_dir = [file for file in os.listdir(dir_path) if file[-4:] == 'json']
             # open jsons and append all data in directory
             for i, json_in_dir in enumerate(jsons_in_dir):
                 file_path = os.path.join(dir_path, json_in_dir)
@@ -580,8 +580,8 @@ def generate_final_geojson(DIR_EPC: str, DIR_OUTPUTS: str, AREA_OF_INTEREST_CODE
     gdf_final.insert(0, "id_epc", gdf_final.index)
 
     # add footprint data
-
-    file_path_footprints = os.path.join(DIR_OUTPUTS, str('footprints_' + AREA_OF_INTEREST_CODE + '.geojson'))
+    file_path_footprints = os.path.join(DIR_OUTPUTS, AREA_OF_INTEREST_CODE,
+                                        str('footprints_' + AREA_OF_INTEREST_CODE + '.geojson'))
 
     gdf_footprints = case_specific_json_loader(file_path_footprints, 'footprints')
     # correct potential typo in results

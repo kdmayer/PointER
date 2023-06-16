@@ -15,7 +15,7 @@ if DIR_BASE not in sys.path:
 # Import functions from own .py scripts
 from pointcloud_functions import *
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
-from utils.visualization import visualize_single_3d_point_cloud
+from utils.visualization import batch_visualization
 from utils.aerial_image import get_aerial_image_lat_lon
 
 ######################   Configuration   #####################################
@@ -163,16 +163,9 @@ generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_p
 
 # Visualization for evaluation of results
 # Visualize example building point cloud data
-pce_file_names = file_name_from_polygon_list(list(gdf_pc.geom_fp), file_extension=".html")
-for i, lidar_pc in enumerate(lidar_numpy_list):
-    if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-        save_path = os.path.join(DIR_VISUALIZATION, pce_file_names[i])
-        visualize_single_3d_point_cloud(
-            lidar_pc,
-            title=str(i),
-            save_path=save_path,
-            show=False
-        )
+DIR_POINT_CLOUDS = os.path.join(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST[0])
+batch_visualization(DIR_POINT_CLOUDS, DIR_VISUALIZATION,
+                    format='html', status_update=False, number_examples=NUMBER_EXAMPLE_VISUALIZATIONS)
 
 # Download aerial image for the building examples
 if ENABLE_AERIAL_IMAGE_DOWNLOAD:
