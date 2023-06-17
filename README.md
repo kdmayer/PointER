@@ -39,18 +39,6 @@ Example:
 
     pip install <new_core_dependency>
 
-## TODOs.md
- 
- TODOs.md helps us to keep track of our progress and TODO items. 
- 
- Please specify the date and the author name when adding new TODOs. 
-
-## Important Note: 
-
- - **Please do not push your changes directly to the main branch.**
- - Instead, let's develop features locally with the help of feature branches and push them to the remote with a Pull Request (PR). 
- - Suggested format for local branches: feature_name_your_name, e.g. feature_embedding_kevin
- - To save us from tedious debugging sessions, we will not merge PRs which do not execute successfully on local machines.
 
 ## Exemplary PDAL Output from Point_Cloud_Demo.ipynb
  
