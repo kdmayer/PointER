@@ -14,6 +14,7 @@ import numpy as np
 from geoalchemy2 import Geometry
 from utils.utils import normalize_geom, gdf_geometries_wkb_to_shape, file_name_from_polygon_list
 
+
 def load_geojson_footprints_into_database(DIR_BUILDING_FOOTPRINTS, DB_TABLE_NAME_FOOTRPINTS, engine, STANDARD_CRS):
     # load geojson into gdf
     files_footprints = os.listdir(DIR_BUILDING_FOOTPRINTS)
@@ -57,27 +58,6 @@ def load_laz_pointcloud_into_database(DIR_LAS_FILES, DB_TABLE_NAME_LIDAR):
     laz_file_list = [laz_file for laz_file in laz_files if not laz_file[:-4] + '.las' in las_files]
 
     import_laz_files = laz_file_list
-    #    # check which laz files have not yet been unpacked
-    #    import_history_filename = os.path.join(DIR_LAS_FILES, "laz_import_history_do_not_delete.csv")
-    #    # if no history file exists: use all laz files in directory and create history file
-    #    if not os.path.isfile(import_history_filename):
-    #        print("""no LAZ files have been imported to database so far. if they have, make sure the import history.csv
-    #        is in the LAZ file directory""")
-    #        import_laz_files = laz_file_list.copy()
-    #        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
-    #        df_new_imports.to_csv(import_history_filename)
-    #    # if no history file does exist: select only non imported files and update history file
-    #    elif os.path.isfile(import_history_filename):
-    #        print("Some of the files in the directory have already been imported to DB (see %s). Only non imported files "
-    #              "will be uploaded to database" %import_history_filename)
-
-    #        df_import_history = pd.read_csv(import_history_filename)
-    #        imported_files_list = list(df_import_history['imported_files'])
-    #        import_laz_files = [laz_file for laz_file in laz_file_list
-    #                            if not laz_file in imported_files_list]
-    #        df_new_imports = pd.DataFrame({"imported_files": import_laz_files})
-    #        df_import_history.append(df_new_imports)
-    #        df_import_history.to_csv(import_history_filename)
 
     # unzip LAZ files, if corresponding LAS file does not exist
     print('Importing pointcloud data from laz to database. This process can take several minutes')
@@ -177,26 +157,44 @@ def add_geoindex_to_databases(db_connection_url: str, db_table_name_list: list, 
 
 
 def crop_and_fetch_pointclouds_per_building(FP_NUM_START, FP_NUM_END, AREA_OF_INTEREST_CODE, BUILDING_BUFFER_METERS,
-        NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, TABLE_NAME_UPRN, TABLE_NAME_EPC, TABLE_NAME_LIDAR, engine):
+                                            NUMBER_OF_FOOTPRINTS, POINT_COUNT_THRESHOLD, TABLE_NAME_UPRN,
+                                            TABLE_NAME_EPC, TABLE_NAME_LIDAR, engine):
     # Fetch cropped point clouds from database
 
     # Query to fetch points within building footprints as multipoint grouped by building.
     # IMPORTANT: query with geopandas requires a geom column in database to create a GeoDataFrame
 
     # SQL Query explanation:
-    # todo: adapt description for final version
-    # with footprints: defines prepares footprints from footprint table
-    # with patch_unions: crops the point clouds and prepares a pointcloud union per building
-    # with building_pc: transforms the pointcloud unions into multi points, grouped per building
-    # select: fetches the multipoints per building and adds additional information:
-    #   - ogc_fid: id of entry in footprint database (1 ... n)
-    #   - geom: multipoint of pointcloud cropped by building footprint outline
-    #   - num_p_in_pc: number of points in pointcloud
-    #   - geom_fp: footprint polygon
-    #   - osm_id: OSM id of footprint, prefix is way/ or /relation
+    # with footprints: defines chunk of footprints from footprint table
+    # with fp_buffer: adds a buffer to footprints
+    # with fp_uprn: adds uprn to footprints by geographically intersecting uprn points with footprint polygons
+    # with epc: selects epc data of local authority distric
+    # with fp_upern_epc: adds epc information to the footprint based on equal uprn
+    # with patch_unions: crops the point clouds and creates a pointcloud union per building
+    # with building_pc: extracts the pointcloud information from point cloud union
+    #   and transforms union into multi points, grouped per building
+    # with building_pc_fp: adds footprints data to point cloud and filters out buildings with less points than threshold
+    # with building_pc_fp_epc: selects epc information and adds epc information to point cloud
+
+    # select * : selects all distinct point clouds. fetched information includes:
+    #         id_uprn_epc id_query, : a query id to differentiate between footprints with multiple uprn
+    #         id_fp, : distinct footprint id
+    #         uprn, : unique property reference number used to link footprints with epc data
+    #         "LMK_KEY" id_epc_lmk_key, : id of epc database entry
+    #         geom_fp, : geometry of footprint (polygon)
+    #         geom_uprn, : geometry of uprn (point)
+    #         geom_pc geom, : geometry of point cloud (multipoint)
+    #         delta_x, : difference between largest and smallest x value of point cloud
+    #         delta_y, : difference between largest and smallest y value of point cloud
+    #         delta_z, : difference between largest and smallest z value of point cloud
+    #         z_min, : smallest z value of point cloud
+    #         scaling_factor, : scaling factor - largest delta_x/y/z value, could be used to normalize all buildings
+    #         num_p_in_pc, : number of points per point cloud
+    #         "CURRENT_ENERGY_RATING" energy_rating, : epc rating of building, from epc database
+    #         "CURRENT_ENERGY_EFFICIENCY" energy_efficiency : epc efficiency value, from epc database
 
     # query is dynamically adapted by the number of requested footprints (num_footprints) as well as the sample size
-    # of the pointclouds (POINT_COUNT_THRESHOLD)
+    # of the point clouds (POINT_COUNT_THRESHOLD)
 
     sql_query_grouped_points = (
             """
@@ -305,7 +303,7 @@ def create_footprints_in_area_materialized_view(
         db_connection_url: str, AREA_OF_INTEREST_CODE: str, NUMBER_OF_FOOTPRINTS: str,
         TABLE_NAME_LOCAL_AUTHORITY_BOUNDARY, TABLE_NAME_FOOTPRINTS):
     sql_query_get_existing_materialized_views = (
-        """select matviewname as view_name from pg_matviews where matviewname = '%s'""" % AREA_OF_INTEREST_CODE
+            """select matviewname as view_name from pg_matviews where matviewname = '%s'""" % AREA_OF_INTEREST_CODE
     )
     sql_query_drop_existing_materialized_view = (
             """drop materialized view "%s";""" % AREA_OF_INTEREST_CODE
@@ -319,7 +317,11 @@ def create_footprints_in_area_materialized_view(
                     where lab.lad21cd = '%s'
                 ),
                 footprints as (
-                    select row_number() over (order by fps.gid) as id_fp_chunks, fps.geom geom_fp, fps.gid id_fp
+                    select 
+                        row_number() over (order by fps.gid) as id_fp_chunks,
+                        fps.geom geom_fp,
+                        fps.gid id_fp,
+                        fps.unique_property_number upn
                     from %s fps, area_of_interest
                     where st_intersects(fps.geom, area_of_interest.geom)
                     limit %s
@@ -331,9 +333,8 @@ def create_footprints_in_area_materialized_view(
            TABLE_NAME_FOOTPRINTS, NUMBER_OF_FOOTPRINTS)
     )
     sql_query_get_number_of_footprints = (
-        """select count(*) from "%s" """ % AREA_OF_INTEREST_CODE
+            """select count(*) from "%s" """ % AREA_OF_INTEREST_CODE
     )
-
 
     # create connection and cursor
     connection_psycopg2 = psycopg2.connect(db_connection_url)
@@ -344,9 +345,9 @@ def create_footprints_in_area_materialized_view(
     # drop existing materialized view
     if len(existing_view) == 1:
         cursor.execute(sql_query_drop_existing_materialized_view)
-    # create new materialized view with footpints in aera of interest
+    # create new materialized view with footprints in area of interest
     cursor.execute(sql_query_footprint_materialzed_view)
-    # get number of footprints in aera of interest
+    # get number of footprints in area of interest
     cursor.execute(sql_query_get_number_of_footprints)
     num_footprints = cursor.fetchall()[0][0]
     # commit the transaction
@@ -430,12 +431,12 @@ def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPU
     gdf_footprints = gpd.GeoDataFrame({"id_fp": gdf.id_fp, "geometry": gdf.geom_fp})
     gdf_footprints = gdf_footprints.drop_duplicates()
     save_path = os.path.join(
-        DIR_AOI_OUTPUT, 'footprints', str('footprints_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+        DIR_AOI_OUTPUT, 'footprints', str('footprints_' + AOI_CODE + '_' + str(int(n_iteration)) + ".geojson"))
     gdf_footprints.to_file(save_path, driver="GeoJSON")
     # uprn
     gdf_uprn = gpd.GeoDataFrame({"uprn": gdf.uprn, "geometry": gdf.geom_uprn})
     gdf_uprn = gdf_uprn.drop_duplicates()
-    save_path = os.path.join(DIR_AOI_OUTPUT, 'uprn', str('uprn_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json"))
+    save_path = os.path.join(DIR_AOI_OUTPUT, 'uprn', str('uprn_' + AOI_CODE + '_' + str(int(n_iteration)) + ".geojson"))
     gdf_uprn.to_file(save_path, driver="GeoJSON")
     # epc label
     gdf_epc = pd.DataFrame(
@@ -460,13 +461,13 @@ def save_raw_input_information(n_iteration, gdf: gpd.GeoDataFrame, DIR_AOI_OUTPU
     )
     save_path = os.path.join(DIR_AOI_OUTPUT, 'filename_mapping',
                              str('label_filename_mapping_' + AOI_CODE + '_' + str(int(n_iteration)) + ".json")
-    )
+                             )
     gdf_mapping.to_json(save_path, orient='index')
     return
 
 
 def production_metrics_simple(gdf_fm: gpd.GeoDataFrame, save_path: str, aoi_code: str):
-    # gdf_fm: geodataframe with file mapping information
+    # gdf_fm: GeoDataframe with file mapping information
     # calculate
     num_footprints = len(gdf_fm.id_fp.unique())
     num_footprints_pcs = len(gdf_fm[gdf_fm.num_p_in_pc.notna()].id_fp.unique())
@@ -484,12 +485,12 @@ def production_metrics_simple(gdf_fm: gpd.GeoDataFrame, save_path: str, aoi_code
     # print information
     metric_str = ''
     for metric in production_metrics.keys():
-        relative_metric = str(np.round(production_metrics[metric]/production_metrics['footprints_all']*100, 2))
+        relative_metric = str(np.round(production_metrics[metric] / production_metrics['footprints_all'] * 100, 2))
         metric_str += str('number of ' + metric + ': ' + str(production_metrics[metric]) +
-                          ' (%s'%relative_metric + ' %) \n')
+                          ' (%s' % relative_metric + ' %) \n')
     print(metric_str)
     # save
-    file_path = os.path.join(save_path, str('production_metrics_' + str(aoi_code) +' .json'))
+    file_path = os.path.join(save_path, str('production_metrics_' + str(aoi_code) + '.json'))
     with open(file_path, 'w') as f:
         json.dump(production_metrics, f)
     return
@@ -526,7 +527,7 @@ def stitch_raw_input_information(dir_outputs: str, area_of_interest_code: str, S
     for subdir in SUB_FOLDER_LIST:
         if subdir != 'npy_raw':
             dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
-            jsons_in_dir = [file for file in os.listdir(dir_path) if file[-5:] == '.json']
+            jsons_in_dir = [file for file in os.listdir(dir_path) if file[-4:] == 'json']
             # open jsons and append all data in directory
             for i, json_in_dir in enumerate(jsons_in_dir):
                 file_path = os.path.join(dir_path, json_in_dir)
@@ -535,8 +536,12 @@ def stitch_raw_input_information(dir_outputs: str, area_of_interest_code: str, S
                     gdf = gdf_snippet.copy()
                 else:
                     gdf = gdf.append(gdf_snippet)
+            if subdir == 'footprints' or subdir == 'uprn':
+                file_ending = '.geojson'
+            else:
+                file_ending = '.json'
             # save stitched file
-            save_path = os.path.join(DIR_AOI_OUTPUT, str(str(subdir) + '_' + str(area_of_interest_code) + '.json'))
+            save_path = os.path.join(DIR_AOI_OUTPUT, str(str(subdir) + '_' + str(area_of_interest_code) + file_ending))
             case_specific_json_saver(gdf, save_path, subdir)
     return
 
@@ -551,7 +556,7 @@ def output_folder_setup(dir_outputs: str, area_of_interest_code: str, SUB_FOLDER
         print('output for this area of interest already exists. delete or choose other area code')
     else:
         os.mkdir(DIR_AOI_OUTPUT)
-        # create sub-folders for pointcloud data and meta data
+        # create sub-folders for point cloud data and meta data
         for subdir in SUB_FOLDER_LIST:
             dir_path = os.path.join(DIR_AOI_OUTPUT, subdir)
             if not os.path.isdir(dir_path): os.mkdir(dir_path)
@@ -575,13 +580,15 @@ def generate_final_geojson(DIR_EPC: str, DIR_OUTPUTS: str, AREA_OF_INTEREST_CODE
     gdf_final.insert(0, "id_epc", gdf_final.index)
 
     # add footprint data
-    file_path_footprints = os.path.join(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, str('footprints_' + AREA_OF_INTEREST_CODE + '.json'))
+    file_path_footprints = os.path.join(DIR_OUTPUTS, AREA_OF_INTEREST_CODE,
+                                        str('footprints_' + AREA_OF_INTEREST_CODE + '.geojson'))
+
     gdf_footprints = case_specific_json_loader(file_path_footprints, 'footprints')
     # correct potential typo in results
     if "if_fp" in gdf_footprints.columns:
         gdf_footprints = gdf_footprints.rename(columns={"if_fp": "id_fp"})
 
-    if is_public==True:
+    if is_public == True:
         gdf_footprints = gdf_footprints.drop(["geometry"], axis=1)
 
     gdf_final = gpd.GeoDataFrame(gdf_final.set_index("id_fp").join(gdf_footprints.set_index("id_fp"), how="left"))

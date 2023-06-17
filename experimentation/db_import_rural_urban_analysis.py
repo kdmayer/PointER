@@ -13,6 +13,13 @@ if DIR_BASE not in sys.path:
 import config
 from src.pointcloud_functions import case_specific_json_loader
 
+
+########################################################################################################################
+#
+# The following code generates two tables in the database which are required for the rural - urban analysis.
+#
+########################################################################################################################
+
 ### IMPORTANT NOTE:
 # for this program to work, the 2011 UK small output area boundary shapes need to be inserted into database
 # download the data here:

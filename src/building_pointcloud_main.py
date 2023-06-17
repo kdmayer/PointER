@@ -1,13 +1,12 @@
-# todo: remove the surpression of warnings
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Import python packages
-import os
 import sys
 import os
 from sqlalchemy import create_engine
 from datetime import datetime
+from shapely.geometry import Point
 
 # Add parent folder to path, so that notebook can find .py scripts
 DIR_BASE = os.path.abspath('..')
@@ -17,20 +16,22 @@ if DIR_BASE not in sys.path:
 # Import functions from own .py scripts
 from pointcloud_functions import *
 from utils.utils import convert_multipoint_to_numpy, check_directory_paths, file_name_from_polygon_list
-from utils.visualization import visualize_single_3d_point_cloud
+from utils.visualization import batch_visualization
 from utils.aerial_image import get_aerial_image_lat_lon
 
 ######################   Configuration   #####################################
-# Define pointcloud parameters
+# Define point cloud parameters
 # UK local authority boundary code to specify area of interest (AOI)
 AREA_OF_INTEREST_CODE = 'E06000014'
+# create results for publishing or not (due to license) - if False: results contain verisk footprints & epc addresses
+RESULTS_PUBLIC = False
 # buffer around building footprint in meters
 BUILDING_BUFFER_METERS = 0.5
 # define how many footprints should be created. Use "None" to use all footprints in AOI
 MAX_NUMBER_OF_FOOTPRINTS = None
 # number of footprints per query (size of data requires processing in chunks)
 NUM_FOOTPRINTS_CHUNK_SIZE = 500
-# define minimum points in pointcloud, smaller pointclouds are dismissed
+# define minimum points in point cloud, smaller point clouds are dismissed
 POINT_COUNT_THRESHOLD = 100
 # define how many example 3D plots should be created
 NUMBER_EXAMPLE_VISUALIZATIONS = 20
@@ -63,7 +64,7 @@ DB_TABLE_NAME_UPRN = 'uprn'
 DB_TABLE_NAME_EPC = 'epc'
 DB_TABLE_NAME_AREA_OF_INTEREST = 'local_authority_boundaries'
 
-# Intialize connection to database
+# Initialize connection to database
 DB_CONNECTION_URL = config.DATABASE_URL
 engine = create_engine(DB_CONNECTION_URL, echo=False)
 
@@ -134,7 +135,7 @@ for n_iteration in np.arange(START_ITERATION, num_iterations):
     gdf_pc = gdf[gdf.geom != None].copy()
     gdf_pc = add_floor_points_to_points_in_gdf(gdf_pc)
 
-    # Save raw pointcloud without threshhold or scaling
+    # Save raw point cloud without threshold or scaling
     print("Numpy list creation - chunk %s out of %s - " % (n_iteration, num_iterations),
           datetime.now().strftime("%H:%M:%S"))
     lidar_numpy_list = list(gdf_pc.geom.apply(convert_multipoint_to_numpy))
@@ -153,40 +154,38 @@ stitch_raw_input_information(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST
 
 # calculate simple production metrics for point cloud production in area of interest
 file_path = os.path.join(DIR_AOI_OUTPUT, str('filename_mapping_' + str(AREA_OF_INTEREST_CODE) + '.json'))
-# load mapping geodataframe
+# load mapping GeoDataframe
 gdf_fm = case_specific_json_loader(file_path, 'filename_mapping')
 # calculate metrics
 production_metrics_simple(gdf_fm, DIR_AOI_OUTPUT, AREA_OF_INTEREST_CODE)
 # create final result geojson (can take a while)
 print("Creating final result .geojson - this can process can take some minutes")
-generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_public=False)
+generate_final_geojson(DIR_EPC, DIR_OUTPUTS, AREA_OF_INTEREST_CODE, gdf_fm, is_public=RESULTS_PUBLIC)
 
 # Visualization for evaluation of results
-# Visualize example building pointcloud data
-pce_file_names = file_name_from_polygon_list(list(gdf_pc.geom_fp), file_extension=".html")
-for i, lidar_pc in enumerate(lidar_numpy_list):
-    if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-        save_path = os.path.join(DIR_VISUALIZATION, pce_file_names[i])
-        visualize_single_3d_point_cloud(
-            lidar_pc,
-            title=str(i),
-            save_path=save_path,
-            show=False
-        )
+# Visualize example building point cloud data
+DIR_POINT_CLOUDS = os.path.join(DIR_OUTPUTS, AREA_OF_INTEREST_CODE, SUB_FOLDER_LIST[0])
+batch_visualization(DIR_POINT_CLOUDS, DIR_VISUALIZATION,
+                    format='html', status_update=False, number_examples=NUMBER_EXAMPLE_VISUALIZATIONS)
 
 # Download aerial image for the building examples
 if ENABLE_AERIAL_IMAGE_DOWNLOAD:
-    gdf_fp_lat_lon = gpd.GeoDataFrame(
-        {"id_fp": gdf_pc.id_fp,
-         "geometry": gdf_pc.geom_fp}
-    )
-    gdf_fp_lat_lon.crs = 27700
-    gdf_fp_lat_lon = gdf_fp_lat_lon.to_crs(4326)
+    pc_file_names = os.listdir(DIR_POINT_CLOUDS)
+    pc_file_names = pc_file_names[:NUMBER_EXAMPLE_VISUALIZATIONS]
+    pc_file_names = [fn[:-4] for fn in pc_file_names]
+    center_point_list = [Point(float(fn[0:fn.find("_"):]), float(fn[fn.find("_") + 1:])) for fn in pc_file_names]
 
-    img_filenames = file_name_from_polygon_list(list(gdf_fp_lat_lon.geometry), file_extension=".png")
-    for i, building in enumerate(gdf_fp_lat_lon.iloc):
+    gdf_center_points_lat_lon = gpd.GeoDataFrame(
+        {"geometry": center_point_list}
+    )
+    gdf_center_points_lat_lon.crs = 27700
+    gdf_center_points_lat_lon = gdf_center_points_lat_lon.to_crs(4326)
+
+    img_filenames = [fn + '.png' for fn in pc_file_names]
+
+    for i, building in enumerate(gdf_center_points_lat_lon.iloc):
         if i <= NUMBER_EXAMPLE_VISUALIZATIONS:
-            cp = building.geometry.centroid
+            cp = building.geometry
             get_aerial_image_lat_lon(
                 latitude=cp.y,
                 longitude=cp.x,

@@ -18,8 +18,8 @@ documentation/*
 !documentation/Singularity_On_Cluster.md
 
 experimentation/*
-!experimentation/Point_Cloud_Demo.ipynb
-!experimentation/Merge_footprint_and_LiDAR_points.ipynb
+!archive/Point_Cloud_Demo.ipynb
+!archive/Merge_footprint_and_LiDAR_points.ipynb
 !pgpointcloud_main.py
 
 archive/*

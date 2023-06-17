@@ -4,7 +4,12 @@
 
 Go to the [Singularity Docs](https://docs.sylabs.io/guides/3.0/user-guide/installation.html#install-on-windows-or-mac) and install Singularity.
 
-From the respective Singularity folder, here vm-singularity, initialize the Virtual Machine with
+Create a new folder for the VM, name it "vm-singularity" and move to the folder.
+
+    mkdir vm-singularity
+    cd vm-singularity
+
+From the respective Singularity folder (vm-singularity), initialize the Virtual Machine with
 
     export VM=sylabs/singularity-3.0-ubuntu-bionic64 && \
     vagrant init $VM
@@ -13,7 +18,7 @@ Install the vagrant-disksize plugin with
 
     VAGRANT_DISABLE_STRICT_DEPENDENCY_ENFORCEMENT=1 vagrant plugin install vagrant-disksize
 
-Add the following specifications to the Vagrantfile. They will be specified in between the following lines
+Add specifications to the Vagrantfile. They will be specified in between the following lines
 
         vagrant.configure('2') do |config|
             <<SPECIFICATION>>
@@ -23,7 +28,9 @@ Specify the desired disk size in the Vagrantfile
 
         config.disksize.size = '150GB'
 
-To provide enough working memory for the large LAZ point cloud files, we need to change the memory to 4 GB
+To provide enough working memory for the large LAZ point cloud files, we need to change the memory.
+We ran the process with 48 GB of RAM. 
+The provided example works with 4 GB of RAM, but usually, the point clouds are larger and will require more memory.
       
     config.vm.provider "virtualbox" do |vb|
       #   # Customize the amount of memory on the VM:
@@ -46,7 +53,8 @@ In order to share a folder from our host computer to the VM, we can specify the 
 This way, we can easily exchange data between the VM and our host computer.
 
 The first parameter specifies the host path (can be absolute or relative to the project folder "vm-singularity"). 
-Make sure that the host folder exists.
+**Make sure that the host folder exists** or create it, otherwise the spin up of the virtual machine will fail.
+
 The second parameter specifies the guest path. It should point to "/home/vagrant/" to be accessible in the singularity container.
 The new guest folder will be created during spin up.
 
@@ -112,6 +120,8 @@ Then, we can connect to the initial postgres database to check if the setup was 
 
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d postgres
 
+You should see "postgres=#" on the left of your command line.
+
 To conclude, using the postgres shell, we create a new database
     
     CREATE DATABASE cs224w_db;
@@ -124,7 +134,9 @@ to connect to our new cs224w_db base
     
     singularity exec -B $HOME/pgdata:/var/lib/postgresql/data,$HOME/pgrun:/var/run/postgresql cs224w.sif psql -d cs224w_db
 
-Since it is a new database, we need to add the pointcloud and postgis extensions
+You should see "cs224w_db=#" on the left of your command line.
+
+Since it is a new database, we need to add the poin tcloud and postgis extensions
     
     CREATE EXTENSION postgis;
 	CREATE EXTENSION pointcloud;
@@ -134,7 +146,7 @@ Disconnect from database
 
     \q
 
-For now, the database setup is complete. We will populate our pointcloud database with data later.
+For now, the database setup is complete. We will populate our point cloud database with data later.
 
 #### Project 
 We connect to the singularity container shell with 
@@ -150,7 +162,21 @@ During the "git clone" step, you will need to provide your GitHub username and y
 To connect to the database with our python code, we define the database credentials in the config.py file. 
 Based on the config_template.py, we adapt the connection parameters. 
 Furthermore, we can specify a Google Maps API key, in case we want to download Google aerial images. 
-Then we rename the file to config.py 
+
+To do this, we disconnect from the singularity container with 
+
+    exit
+
+and then move to the CS224W_LIDAR folder and adapt the file by:
+
+    cd CS224W_LIDAR
+    vim config_template.py
+
+Then we reconnect to the singularity container with
+
+    singularity shell cs224w.sif
+
+and we rename the config_template.py file to config.py 
 
     cd CS224W_LIDAR && \ 
     mv config_template.py config.py 
@@ -198,16 +224,17 @@ To make the data accessible to our VM, we copy and paste the data into the "data
 folder specified in the Vagrantfile.
 
 To set up the database, we move the data to the project folder. By moving the data to the project folder, we ensure 
-that the singularity container can access the data. Note that not all of the VM's directories are accessible from within singularity
+that the singularity container can access the data. 
+Note that not all of the VM's directories are accessible from within singularity.
+
+Note that the following commands work for example files of York. 
+The filenames need to be adapted when working with the full datasets.
 
     mv /home/vagrant/data_share/uprn_york.gpkg /home/vagrant/CS224W_LIDAR/assets/uprn/uprn_york.gpkg 
     mv /home/vagrant/data_share/footprints_verisk_york.gpkg /home/vagrant/CS224W_LIDAR/assets/footprints/footprints_verisk_york.gpkg
     mv /home/vagrant/data_share/local_authority_boundaries_york.gpkg /home/vagrant/CS224W_LIDAR/assets/local_authority_boundaries/local_authority_boundaries_york.gpkg
     
 We also move 2 files which will be required when running the program to the assets folder (preparation for later)
-
-TODO: Can we clarify this step? The folder contains E06000014.csv instead of E08000026.csv
-    Response Sebastian: I prepared the example with data from York, so E06000014.csv is the correct file.
 
     mv /home/vagrant/data_share/E06000014.csv /home/vagrant/CS224W_LIDAR/assets/epc/E06000014.csv 
     mv /home/vagrant/data_share/SE6053_P_11311_20171109_20171109.laz /home/vagrant/CS224W_LIDAR/assets/uk_lidar_data/SE6053_P_11311_20171109_20171109.laz
@@ -225,7 +252,7 @@ To insert geopackage data into the database, we need GDALs ogr2ogr function. The
     conda activate cs224w
 
 Using the conda GDAL installation, we insert the .gpkg and .shp data into our cs224w_db database. 
-This process can take 15+ minutes.
+This process can take 15+ minutes, but with the example data for York, this should only take seconds.
 
 Make sure, you are in home directory, then:
 
@@ -246,11 +273,18 @@ the setup for other AoIs. Instead of the .gpkg format, .shp files could also be 
 
 See here for a description of input parameters: https://postgis.net/workshops/postgis-intro/loading_data.html
 
-After loading the data into the database, we can execute 
+After loading the data into the database, we can try out the program in a jupyter notebook:
+See the description of how to run jupyter notebook from vagrant vm in "Notes" below.
+Make sure to be in the CS224W_LIDAR folder when running the notebook.
 
-    experimentation/Building_Pointcloud_Generation.ipynb 
+    experimentation/building_pointcloud_generation.ipynb 
 
 to generate building point clouds for York.
+
+To generate building point clouds for the entire AOI of York or other AOIs, please see the detailed description:
+
+    documentation/RUN_POINTCLOUD_GENERATION.md
+
 
 ### Notes:
 

@@ -1,19 +1,42 @@
-from typing import List
+import os
 
-import geopandas as gpd
 import numpy as np
 import plotly.graph_objects as go
 
-import os
+from typing import List
 
-from utils.utils import convert_multipoint_to_numpy
+from utils.utils import point_cloud_xyz
+
+
+def cm_to_inch(length_cm):
+    length_inch = length_cm * 0.3937
+    return length_inch
+
+
+# Define image size
+def get_image_size(version):
+    max_width = 14.7
+    if version == 'small':
+        img_size_x = cm_to_inch(max_width * 2 / 3)
+        img_size_y = img_size_x
+    elif version == 'wide':
+        img_size_x = cm_to_inch(max_width)
+        img_size_y = img_size_x / 6
+    elif version == 'large':
+        img_size_x = cm_to_inch(max_width)
+        img_size_y = img_size_x / 4
+    elif version == 'one_third_large':
+        img_size_x = cm_to_inch(max_width)
+        img_size_y = img_size_x / 3
+    elif version == "squared_large":
+        img_size_x = cm_to_inch(max_width)
+        img_size_y = img_size_x
+
+    return img_size_x, img_size_y
 
 
 def visualize_3d_array(point_cloud_array: np.ndarray = None, file_name_list: List = None, example_ID=None):
-    x = point_cloud_array[example_ID, :, 0].flatten()
-    y = point_cloud_array[example_ID, :, 1].flatten()
-    z = point_cloud_array[example_ID, :, 2].flatten()
-
+    x, y, z = point_cloud_xyz(point_cloud_array)
     scatter = go.Scatter3d(x=x, y=y, z=z, mode='markers',
                            marker=dict(size=3, color=z, colorscale='Viridis'))
     layout = go.Layout(title=f'Visualization of {file_name_list[example_ID]}')
@@ -24,10 +47,7 @@ def visualize_3d_array(point_cloud_array: np.ndarray = None, file_name_list: Lis
 
 def visualize_single_3d_point_cloud(point_cloud_array: np.ndarray = None, title: str = 'title', save_path: str = None,
                                     show: bool = False, format: str = 'html'):
-    x = point_cloud_array[:, 0].flatten()
-    y = point_cloud_array[:, 1].flatten()
-    z = point_cloud_array[:, 2].flatten()
-
+    x, y, z = point_cloud_xyz(point_cloud_array)
     scatter = go.Scatter3d(x=x, y=y, z=z, mode='markers',
                            marker=dict(size=3, color=z, colorscale='Viridis'))
     layout = go.Layout(title=f'Visualization of {title}')
@@ -54,12 +74,16 @@ def visualize_example_pointclouds(lidar_numpy_list: list, DIR_VISUALIZATION: str
             )
 
 
-def batch_visualization(DIR_POINT_CLOUDS, DIR_SAVE, format: str='html', number_examples=None):
+def batch_visualization(DIR_POINT_CLOUDS, DIR_SAVE, format: str = 'html', status_update: bool = False,
+                        number_examples=None):
     pc_file_names = os.listdir(DIR_POINT_CLOUDS)
     if number_examples == None:
         number_examples = len(pc_file_names)
     count = 0
     for pc_file_name in pc_file_names:
+        if status_update and count % 100 == 0:
+            print('Running batch visualization in ' + str(format) + ' of images ' +
+                  str(count) + ' out of ' + str(number_examples))
         if count <= number_examples:
             count += 1
             pc_file_path = os.path.join(DIR_POINT_CLOUDS, pc_file_name)
