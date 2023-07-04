@@ -1,48 +1,33 @@
-## Setup Instructions
+# Points for Energy Renovation (PointER): 
+## A LiDAR-Derived Point Cloud Dataset of One Million English Buildings Linked to Energy Characteristics
 
-### Install given conda environment
+## Getting Started
+- Please see our [setup documentation](documentation/DB_CONTAINER_SETUP.md) for a step by step description.
+- Please check our related paper for information about the method and the resulting dataset.
+The pre-print version is available [here](https://arxiv.org/abs/2306.16020). 
+- A dataset comprising one million building point clouds with half of the buildings linked to energy features is available [here](https://mediatum.ub.tum.de/1713501).
 
-Clone the GitHub repository to your local machine. Navigate into the root directory.
+## Prerequisites
+- Required packages are documented in the [environment.yml](environment.yml) file. 
+- The [environment_for_analysis.yml](environment_for_analysis.yml) includes some more packages required for visualization and analysis.
 
-In your conda base environment, install your environment with 
+## Running the Code
+- To run an example point cloud generation, please use the [jupyter notebook](experimentation/building_pointcloud_generation.ipynb).
+- To run the point cloud generation for an entire area of interest, please see the [point cloud generation documentation](documentation/RUN_POINTCLOUD_GENERATION.md).
+- The main program can be found [here](src/building_pointcloud_main.py). Please note, that the point cloud generation process involves some upfront data preparation.
 
-    conda-lock install [-p {prefix}|-n {name}]
+The process involves 6 steps:
 
-Note: 
+![img](/assets/images/overview.png)
 
-- The -p argument specifies your local OS and can be either *linux-64*, *osx-64*, or *win-64*
-- The -n argument will overwrite the name specified in the environment.yml file
+Due to the size of the point cloud files, it is recommended to set up the container on a machine with a large working memory. 
+We ran the code without problems on a machine with 48 GB, but a machine with 16 GB or more should work.
 
-Example: 
+## Versioning
+V0.1 Initial version
 
-    conda-lock install -n cs224w
+## Authors
+Author: Sebastian Krapf, Kevin Mayer
 
-Then, activate your environment with:
-
-    conda activate cs224w
-
-You are ready to go.
-
-### Adapt given conda environment
-
-If you need to add new **conda** core dependencies to the existing environment.yml, adapt the environment.yml file manually.
-
-Afterwards,
-
-    pip install conda-lock 
-    conda-lock -f environment.yml 
-    conda-lock install [-p {prefix}|-n {name}]
-
-If you need to add new **pip** core dependencies, install them manually after going through the set up with conda-lock.
-
-Example:
-
-    pip install <new_core_dependency>
-
-
-## Exemplary PDAL Output from Point_Cloud_Demo.ipynb
- 
- ![PDAL Output](https://github.com/kdmayer/CS224W_LIDAR/blob/main/assets/images/example.png)
- 
-
-
+## License
+This project is licensed under the [MIT License](LICENSE).
