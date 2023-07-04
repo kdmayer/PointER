@@ -23,6 +23,27 @@ The process involves 6 steps:
 Due to the size of the point cloud files, it is recommended to set up the container on a machine with a large working memory. 
 We ran the code without problems on a machine with 48 GB, but a machine with 16 GB or more should work.
 
+## Dataset
+The [dataset](https://mediatum.ub.tum.de/1713501) contains one million building point clouds for 16 Local Authority Districts in England.
+These Local Authority Districts are representative for the English building stock and selected across the country (see image).
+
+![img](/assets/images/LAD_selected.png)
+
+This is an example of a resulting point cloud:
+![img](/assets/images/example.png)
+
+## Data Sources
+- Point cloud data (.laz): [UK National LiDAR Programme](https://www.data.gov.uk/dataset/f0db0249-f17b-4036-9e65-309148c97ce4/national-lidar-programme)
+  - Open Government Licencse
+- We use [Verisk UKBuildings database](https://www.verisk.com/en-gb/3d-visual-intelligence/products/ukbuildings/) (.gpkg format) as building footprints
+  - License for personal use only
+  - Alternatively, we can use OSM data
+- [Local Authority Distric Boundaries](https://geoportal.statistics.gov.uk/) (.shp format) 
+  - Open Government Licencse
+- [Unique Property Reference Numbers](https://www.ordnancesurvey.co.uk/business-government/products/open-uprn) (UPRN) including coordinates (.gpkg format) 
+  - Open Government Licencse
+
+
 ## Versioning
 V0.1 Initial version
 
