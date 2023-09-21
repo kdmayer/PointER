@@ -47,9 +47,6 @@ This is an example of a resulting point cloud:
 ## Versioning
 V0.1 Initial version
 
-## Authors
-Author: Sebastian Krapf, Kevin Mayer
-
 ## Citation
 
     @article{Krapf2023,
