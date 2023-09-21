@@ -50,5 +50,18 @@ V0.1 Initial version
 ## Authors
 Author: Sebastian Krapf, Kevin Mayer
 
+## Citation
+
+    @article{Krapf2023,
+      doi = {10.1038/s41597-023-02544-x},
+      url = {https://doi.org/10.1038/s41597-023-02544-x},
+      year = {2023},
+      publisher = {Springer Science and Business Media {LLC}},
+      volume = {10},
+      author = {Sebastian Krapf and Kevin Mayer and Martin Fischer},
+      title = {Points for energy renovation ({PointER}): A point cloud dataset of a million buildings linked to energy features},
+      journal = {Scientific Data}
+    }
+
 ## License
 This project is licensed under the [MIT License](LICENSE).
