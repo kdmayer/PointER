@@ -3,8 +3,7 @@
 
 ## Getting Started
 - Please see our [setup documentation](documentation/DB_CONTAINER_SETUP.md) for a step by step description.
-- Please check our related paper for information about the method and the resulting dataset.
-The pre-print version is available [here](https://arxiv.org/abs/2306.16020). 
+- Please check our [related open access paper](https://www.nature.com/articles/s41597-023-02544-x) for information about the method and the resulting dataset. 
 - A dataset comprising one million building point clouds with half of the buildings linked to energy features is available [here](https://mediatum.ub.tum.de/1713501).
 
 ## Prerequisites
